@@ -1,4 +1,5 @@
 import os
+from sniffer import CLEAR
 
 BROADCAST = 'FF:FF:FF:FF:FF:FF'
 global BYTES 
@@ -63,17 +64,19 @@ def ethernet_frame(packet, name):
     name = name.split(".")
     name = name[0].title()
 
-    os.system('clear')
+    os.system(CLEAR)
 
     print(f'\n\t----- Output for {name} -----\n')
 
-    GET_DEST_MAC= decimal_to_hexa(packet[:6])
+    GET_DEST_MAC = decimal_to_hexa(packet[:6])
     GET_SRC_MAC = decimal_to_hexa(packet[6:12])
     GET_TYPE = decimal_to_hexa(packet[12:14])
+    GET_FCS = decimal_to_hexa(packet[-4:])
 
     DEST_MAC = ''
     SRC_MAC = ''
     TYPE = f'0x{GET_TYPE[0]}{GET_TYPE[1]}'
+    FCS = f'0x {GET_FCS[0]} {GET_FCS[1]} {GET_FCS[2]} {GET_FCS[3]}'
 
     for byte in GET_DEST_MAC:
         DEST_MAC = f'{DEST_MAC}{byte}:'
@@ -129,5 +132,6 @@ def ethernet_frame(packet, name):
     print(f'\n  -> Ethertype: {TYPE}')
 
     print(f'     - {BYTES} bytes de carga útil de Ethernet')
+    print(f'     - FCS: {FCS}')
 
     input('\t\n')
