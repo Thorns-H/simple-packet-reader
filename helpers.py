@@ -1,5 +1,10 @@
 import os
-from sniffer import CLEAR
+import platform
+
+if platform.system() != 'Linux':
+    CLEAR = 'cls'
+else:
+    CLEAR = 'clear'
 
 BROADCAST = 'FF:FF:FF:FF:FF:FF'
 global BYTES 

@@ -1,13 +1,8 @@
-from helpers import read_file, ethernet_frame
+from helpers import read_file, ethernet_frame, CLEAR
 import os
-import platform
 
 TESTING = "test_files"
 PATH = os.getcwd()
-if platform.system() != 'Linux':
-    CLEAR = 'cls'
-else:
-    CLEAR = 'clear'
 
 def main():
     while True:
