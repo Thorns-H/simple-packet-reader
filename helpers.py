@@ -63,7 +63,86 @@ def get_oui_nic(MAC):
 
     return MULTICAST, LOCAL
 
-        
+def arp_frame(packet : list):
+
+    HTYPE = decimal_to_hexa(packet[:2])
+    HTYPE = f'{HTYPE[0]}{HTYPE[1]}'
+
+    PTYPE = decimal_to_hexa(packet[2:4])
+    PTYPE = f'0x{PTYPE[0]}{PTYPE[1]}'
+
+    HARDWARE_ADDR_LEN = packet[4]
+    PROTOCOL_ADDR_LEN = packet[5]
+
+    OP_CODE = decimal_to_hexa(packet[6:8])
+    OP_CODE = f'{OP_CODE[0]}{OP_CODE[1]}'
+
+    GET_SOURCE_ADDR = decimal_to_hexa(packet[8:8 + HARDWARE_ADDR_LEN])
+
+    SOURCE_ADDR = ''
+
+    for byte in GET_SOURCE_ADDR:
+        SOURCE_ADDR = f'{SOURCE_ADDR}{byte}:'
+
+    SOURCE_ADDR = SOURCE_ADDR[:-1]
+
+    GET_SOURCE_PROTOCOL_ADDR = packet[8 + HARDWARE_ADDR_LEN:8 + 4 + HARDWARE_ADDR_LEN]
+
+    SOURCE_PROTOCOL_ADDR = ''
+
+    for byte in GET_SOURCE_PROTOCOL_ADDR:
+        SOURCE_PROTOCOL_ADDR = f'{SOURCE_PROTOCOL_ADDR}{byte}.'
+
+    SOURCE_PROTOCOL_ADDR = SOURCE_PROTOCOL_ADDR[:-1]
+
+    GET_TARGET = decimal_to_hexa(packet[8 + 4 + HARDWARE_ADDR_LEN:8 + 4 + HARDWARE_ADDR_LEN + HARDWARE_ADDR_LEN])
+
+    TARGET = ''
+
+    for byte in GET_TARGET:
+        TARGET = f'{TARGET}{byte}:'
+
+    TARGET = TARGET[:-1]
+
+    GET_TARGET_PROTOCOL_ADDR = packet[8 + 4 + HARDWARE_ADDR_LEN + HARDWARE_ADDR_LEN:8 + 4 + HARDWARE_ADDR_LEN + HARDWARE_ADDR_LEN + 4]
+
+    TARGET_PROTOCOL_ADDR = ''
+
+    for byte in GET_TARGET_PROTOCOL_ADDR:
+        TARGET_PROTOCOL_ADDR = f'{TARGET_PROTOCOL_ADDR}{byte}.'
+
+    TARGET_PROTOCOL_ADDR = TARGET_PROTOCOL_ADDR[:-1]
+    
+    ARP_HEADER = "\033[1m" + "[ARP]" + "\033[0m"
+
+    print(f'\n\t\t     {ARP_HEADER}\n')
+
+    if HTYPE == '0001':
+        print(f'     - Hardware Type: Ethernet (1)')
+    if PTYPE == '0x0800':
+        print(f'     - Protocol Type: {PTYPE} (Ipv4)')
+    
+    print(f'     - Hardware Address Length: {HARDWARE_ADDR_LEN} bytes')
+    print(f'     - Protocol Address Length: {PROTOCOL_ADDR_LEN} bytes')
+
+    if OP_CODE == '0000':
+        print(f'     - Operation: ARP Reserved (0)')
+    elif OP_CODE == '0001':
+        print(f'     - Operation: ARP Request (1)')
+    elif OP_CODE == '0002':
+        print(f'     - Operation: ARP Reply (2)')
+    elif OP_CODE == '0003':
+        print(f'     - Operation: ARP Request - Reverse (3)')
+    elif OP_CODE == '0004':
+        print(f'     - Operation: ARP Reply - Reverse (4)')
+
+    print(f'     - Sender MAC Address: {SOURCE_ADDR}')
+    print(f'     - Sender IP Address: {SOURCE_PROTOCOL_ADDR}')
+    print(f'     - Target MAC Address: {TARGET}')
+    print(f'     - Target IP Address: {TARGET_PROTOCOL_ADDR}')
+
+    input('\t\n')
+
 def ethernet_frame(packet, name):
 
     name = name.split(".")
@@ -71,7 +150,7 @@ def ethernet_frame(packet, name):
 
     os.system(CLEAR)
 
-    print(f'\n\t----- Output for {name} -----\n')
+    print(f'\n\t----- Output for {name} -----')
 
     GET_DEST_MAC = decimal_to_hexa(packet[:6])
     GET_SRC_MAC = decimal_to_hexa(packet[6:12])
@@ -92,6 +171,10 @@ def ethernet_frame(packet, name):
         SRC_MAC = f'{SRC_MAC}{byte}:'
 
     SRC_MAC = SRC_MAC[:-1]
+
+    ETHER_HEADER = "\033[1m" + "[ETHERNET]" + "\033[0m"
+
+    print(f'\n\t\t   {ETHER_HEADER}\n')
 
     print(f'  -> Destination MAC Address: {DEST_MAC}')
 
@@ -139,4 +222,7 @@ def ethernet_frame(packet, name):
     print(f'     - {BYTES} bytes de carga útil de Ethernet')
     print(f'     - FCS: {FCS}')
 
-    input('\t\n')
+    if TYPE == '0x0806 (ARP)':
+        arp_frame(packet[14:-4])
+    else:
+        input('\t\n')
