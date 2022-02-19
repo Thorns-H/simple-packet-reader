@@ -1,5 +1,8 @@
 import os
+from pickle import GET
 import platform
+from xml.dom.expatbuilder import FragmentBuilder
+from xml.dom.minidom import Identified
 
 if platform.system() != 'Linux':
     CLEAR = 'cls'
@@ -143,6 +146,82 @@ def arp_frame(packet : list):
 
     input('\t\n')
 
+def binary_to_decimal(binary):
+     
+    binary1 = binary
+    decimal, i, n = 0, 0, 0
+    while(binary != 0):
+        dec = binary % 10
+        decimal = decimal + dec * pow(2, i)
+        binary = binary // 10
+        i += 1
+
+    return decimal 
+
+def byte_binary(int_value):
+
+    bin_value = bin(int_value)[2:].zfill(8)
+
+    return bin_value
+
+def ipv4_frame(packet):
+    
+    GET_VERSION_IHL = byte_binary(packet[0])
+    VERSION = GET_VERSION_IHL[:4]
+    IHL = GET_VERSION_IHL[4:]
+    IHL = binary_to_decimal(int(IHL))
+
+    GET_DSCP_ECN = byte_binary(packet[1])
+    DSCP = GET_DSCP_ECN[:6]
+    ECN = GET_DSCP_ECN[6:]
+
+    TOTAL_LENGTH = packet[2:4]
+    TOTAL_LENGTH = f'{str(byte_binary(TOTAL_LENGTH[0]))}{str(byte_binary(TOTAL_LENGTH[1]))}'
+    TOTAL_LENGTH = binary_to_decimal(int(TOTAL_LENGTH))
+
+    IDENTIFICATION = packet[4:6]
+    IDENTIFICATION = f'{str(byte_binary(IDENTIFICATION[0]))}{str(byte_binary(IDENTIFICATION[1]))}'
+    IDENTIFICATION_BINARY = IDENTIFICATION
+    IDENTIFICATION = binary_to_decimal(int(IDENTIFICATION))
+
+    GET_FLAGS = byte_binary(packet[6])
+    FLAGS = GET_FLAGS[:3]
+
+    IPV4_HEADER = "\033[1m" + "[IPV4]" + "\033[0m"
+
+    print(f'\n\t\t     {IPV4_HEADER}\n')
+
+    if VERSION == '0100':
+        print(f'     - Version: Ipv4 (4)')
+    print(f'     - Internet Header Length (IHL): {IHL}')
+    print(f'        -> {str((IHL*32)/8)[:2]} bytes in total')
+
+    if DSCP == '000000':
+        print(f'\n     - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard)')
+
+    if ECN == '00':
+        print(f'     - Explicit Congestion Notification: {binary_to_decimal(int(ECN))} (Non-ETC)')
+    
+    print(f'     - Total Length: {TOTAL_LENGTH} bytes')
+    print(f'     - Identification: {IDENTIFICATION} ({IDENTIFICATION_BINARY})')
+
+    print(f'\n     - Flags: {FLAGS}')
+    if FLAGS[0] == '0':
+        print(f"        -> Reserved: {FLAGS[0]}")
+    if FLAGS[1] == '1':
+        print(f"        -> Don't Fragment: {FLAGS[1]} (True)")
+    else:
+        print(f"        -> Don't Fragment: {FLAGS[1]} (False)")
+
+    if FLAGS[2] == '1':
+        print(f"        -> More Fragments: {FLAGS[2]} (True)")
+    else:
+        print(f"        -> More Fragments: {FLAGS[2]} (False)")
+
+    # CURRENTLY WORKING HERE : FRAGMENT OFFSET
+
+    input('\n\t')
+
 def ethernet_frame(packet, name):
 
     name = name.split(".")
@@ -224,5 +303,7 @@ def ethernet_frame(packet, name):
 
     if TYPE == '0x0806 (ARP)':
         arp_frame(packet[14:-4])
+    elif TYPE == '0x0800 (Ipv4)':
+        ipv4_frame(packet[14:-4])
     else:
         input('\t\n')
