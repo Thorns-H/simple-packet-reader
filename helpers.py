@@ -1,6 +1,6 @@
+from email.headerregistry import Address
 import os
 import platform
-from unicodedata import decimal
 
 if platform.system() != 'Linux':
     CLEAR = 'cls'
@@ -245,6 +245,114 @@ def ipv4_frame(packet):
 
     input('\n\t')
 
+def ipv6_frame(packet):
+
+    IPV6_HEADER = "\033[1m" + "[IPV6]" + "\033[0m"
+    FIRST_LAYER = packet[:4]
+    LAYER = ''
+    PAYLOAD = ''
+    SRC_ADDR = ''
+    DEST_ADDR = ''
+    SRC_DEST_ADDR = ''
+    NEW_DEST_ADDR = ''
+
+    for byte in FIRST_LAYER:
+        LAYER = f'{LAYER}{byte_binary(byte)}'
+
+    VERSION = LAYER[:4]
+    TRAFFIC_CLASS = LAYER[4:12]
+    FLOW_LABEL = LAYER[12:]
+
+    PAYLOAD_LEN = packet[4:6]
+
+    for byte in PAYLOAD_LEN:
+        PAYLOAD = f'{PAYLOAD}{byte_binary(byte)}'
+
+    NEXT_HEADER = packet[6]
+    HOP_LIMIT = packet[7]
+
+    GET_SRC_ADDR = decimal_to_hexa(packet[8:24])
+
+    for byte in GET_SRC_ADDR:
+        SRC_ADDR = f'{SRC_ADDR}{byte}:'
+
+    SRC_ADDR = SRC_ADDR[:-1]
+
+    GET_DEST_ADDR = decimal_to_hexa(packet[24:40])
+
+    for byte in GET_DEST_ADDR:
+        DEST_ADDR = f'{DEST_ADDR}{byte}:'
+
+    DEST_ADDR = DEST_ADDR[:-1]
+
+    print(f'\n\t\t     {IPV6_HEADER}\n')
+
+    print(f'  -> Version: {binary_to_decimal(int(VERSION))} (Ipv6)')
+    print(f'  -> Traffic Class: {binary_to_decimal(int(TRAFFIC_CLASS))}')
+
+    if TRAFFIC_CLASS[0] == '1':
+        print('     - No specific traffic.')
+    if TRAFFIC_CLASS[1] == '1':
+        print('     - Background data.')
+    if TRAFFIC_CLASS[2] == '1':
+        print('     - Unattended data traffic.')
+    if TRAFFIC_CLASS[3] == '1':
+        print('     - Reserved.')
+    if TRAFFIC_CLASS[4] == '1':
+        print('     - Attended bulk data traffic.')
+    if TRAFFIC_CLASS[5] == '1':
+        print('     - Reserved.')
+    if TRAFFIC_CLASS[6] == '1':
+        print('     - Interactive traffic.')
+    if TRAFFIC_CLASS[7] == '1':
+        print('     - Control traffic.')
+
+    print(f'  -> Flow Label: {binary_to_decimal(int(FLOW_LABEL))}')
+    print(f'  -> Payload Length: {binary_to_decimal(int(PAYLOAD))} bytes de carga útil')
+
+    if NEXT_HEADER == 58:
+        print(f'\n  -> Next header: {NEXT_HEADER} (ICMPv6)')
+        print(f"        - Internet Control Message Protocol Version 6")
+    elif NEXT_HEADER == 17:
+        print(f'\n  -> Next header: {NEXT_HEADER} (UDP)')
+        print(f"        - User Datagram Protocol")
+    elif NEXT_HEADER == 6:
+        print(f'\n  -> Next header: {NEXT_HEADER} (TCP)')
+        print(f"        - Transmission Control Protocol")
+
+    print(f'  -> Hop Limit: {HOP_LIMIT} seconds')
+
+    print(f'\n  -> Source MAC Address: {SRC_ADDR}')
+
+    SRC_ADDR_MULTI, SRC_ADDR_LOCAL = get_oui_nic(SRC_ADDR)
+
+    if SRC_ADDR_MULTI:
+        print('     - Es una MAC Address MULTICAST.')
+    else:
+        print('     - Es una MAC Address UNICAST.')
+
+    if SRC_ADDR_LOCAL:
+        print('     - Locally Administred.')
+    else:
+        print('     - Globally Unique.')
+
+    print(f'\n  -> Destination MAC Address: {DEST_ADDR}')
+
+    DEST_ADDR_MULTI, DEST_ADDR_LOCAL = get_oui_nic(DEST_ADDR)
+
+    if DEST_ADDR_MULTI:
+        print('     - Es una MAC Address MULTICAST.')
+    else:
+        print('     - Es una MAC Address UNICAST.')
+
+    if DEST_ADDR_LOCAL:
+        print('     - Locally Administred.')
+    else:
+        print('     - Globally Unique.')
+
+
+    input('\n\t')
+
 def ethernet_frame(packet, name):
 
     name = name.split(".")
@@ -328,5 +436,7 @@ def ethernet_frame(packet, name):
         arp_frame(packet[14:-4])
     elif TYPE == '0x0800 (Ipv4)':
         ipv4_frame(packet[14:-4])
+    elif TYPE == '0x86DD (Ipv6)':
+        ipv6_frame(packet[14:-4])
     else:
         input('\t\n')
