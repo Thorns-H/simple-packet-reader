@@ -1,8 +1,6 @@
 import os
-from pickle import GET
 import platform
-from xml.dom.expatbuilder import FragmentBuilder
-from xml.dom.minidom import Identified
+from unicodedata import decimal
 
 if platform.system() != 'Linux':
     CLEAR = 'cls'
@@ -10,7 +8,7 @@ else:
     CLEAR = 'clear'
 
 BROADCAST = 'FF:FF:FF:FF:FF:FF'
-global BYTES 
+global BYTES
 BYTES = 0
 
 def read_file(packet):
@@ -115,7 +113,7 @@ def arp_frame(packet : list):
         TARGET_PROTOCOL_ADDR = f'{TARGET_PROTOCOL_ADDR}{byte}.'
 
     TARGET_PROTOCOL_ADDR = TARGET_PROTOCOL_ADDR[:-1]
-    
+
     ARP_HEADER = "\033[1m" + "[ARP]" + "\033[0m"
 
     print(f'\n\t\t     {ARP_HEADER}\n')
@@ -124,7 +122,7 @@ def arp_frame(packet : list):
         print(f'     - Hardware Type: Ethernet (1)')
     if PTYPE == '0x0800':
         print(f'     - Protocol Type: {PTYPE} (Ipv4)')
-    
+
     print(f'     - Hardware Address Length: {HARDWARE_ADDR_LEN} bytes')
     print(f'     - Protocol Address Length: {PROTOCOL_ADDR_LEN} bytes')
 
@@ -147,7 +145,7 @@ def arp_frame(packet : list):
     input('\t\n')
 
 def binary_to_decimal(binary):
-     
+
     binary1 = binary
     decimal, i, n = 0, 0, 0
     while(binary != 0):
@@ -156,7 +154,7 @@ def binary_to_decimal(binary):
         binary = binary // 10
         i += 1
 
-    return decimal 
+    return decimal
 
 def byte_binary(int_value):
 
@@ -165,7 +163,7 @@ def byte_binary(int_value):
     return bin_value
 
 def ipv4_frame(packet):
-    
+
     GET_VERSION_IHL = byte_binary(packet[0])
     VERSION = GET_VERSION_IHL[:4]
     IHL = GET_VERSION_IHL[4:]
@@ -181,44 +179,69 @@ def ipv4_frame(packet):
 
     IDENTIFICATION = packet[4:6]
     IDENTIFICATION = f'{str(byte_binary(IDENTIFICATION[0]))}{str(byte_binary(IDENTIFICATION[1]))}'
-    IDENTIFICATION_BINARY = IDENTIFICATION
     IDENTIFICATION = binary_to_decimal(int(IDENTIFICATION))
 
     GET_FLAGS = byte_binary(packet[6])
     FLAGS = GET_FLAGS[:3]
+    GET_OFFSET = byte_binary(packet[7])
+    OFFSET = int(f'{GET_FLAGS[-3:]}{GET_OFFSET}')
+    TTL = packet[8]
+    PROTOCOL = packet[9]
+    HEADER_CHECKSUM = decimal_to_hexa(packet[10:12])
+    SENDER_ADDR = packet[12:16]
+    DEST_ADDR = packet[16:20]
 
     IPV4_HEADER = "\033[1m" + "[IPV4]" + "\033[0m"
 
     print(f'\n\t\t     {IPV4_HEADER}\n')
 
     if VERSION == '0100':
-        print(f'     - Version: Ipv4 (4)')
-    print(f'     - Internet Header Length (IHL): {IHL}')
-    print(f'        -> {str((IHL*32)/8)[:2]} bytes in total')
+        print(f'     -> Version: Ipv4 (4)')
+    print(f'     -> Internet Header Length (IHL): {IHL}')
+    print(f'        - {str((IHL*32)/8)[:2]} bytes in total')
+
+    print(f"\n     -> Type of Service (TOS): {packet[1]}")
 
     if DSCP == '000000':
-        print(f'\n     - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard)')
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard)')
 
     if ECN == '00':
-        print(f'     - Explicit Congestion Notification: {binary_to_decimal(int(ECN))} (Non-ETC)')
-    
-    print(f'     - Total Length: {TOTAL_LENGTH} bytes')
-    print(f'     - Identification: {IDENTIFICATION} ({IDENTIFICATION_BINARY})')
+        print(f'        - Explicit Congestion Notification: {binary_to_decimal(int(ECN))} (Non-ETC)')
 
-    print(f'\n     - Flags: {FLAGS}')
+    print(f'     -> Total Length: {TOTAL_LENGTH} bytes')
+    print(f'     -> Identification: {IDENTIFICATION}')
+
+    print(f'\n     -> Flags: {FLAGS}')
+
     if FLAGS[0] == '0':
-        print(f"        -> Reserved: {FLAGS[0]}")
+        print(f"        - Reserved: {FLAGS[0]}")
     if FLAGS[1] == '1':
-        print(f"        -> Don't Fragment: {FLAGS[1]} (True)")
+        print(f"        - Don't Fragment: {FLAGS[1]} (True)")
     else:
-        print(f"        -> Don't Fragment: {FLAGS[1]} (False)")
+        print(f"        - Don't Fragment: {FLAGS[1]} (False)")
 
     if FLAGS[2] == '1':
-        print(f"        -> More Fragments: {FLAGS[2]} (True)")
+        print(f"        - More Fragments: {FLAGS[2]} (True)")
     else:
-        print(f"        -> More Fragments: {FLAGS[2]} (False)")
+        print(f"        - More Fragments: {FLAGS[2]} (False)")
 
-    # CURRENTLY WORKING HERE : FRAGMENT OFFSET
+    print(f'     -> Fragment Offset: {OFFSET}')
+
+    print(f'\n     -> Time to Live (TTL): {TTL} seconds')
+
+    if PROTOCOL == 1:
+        print(f'     -> Protocol: {PROTOCOL} (ICMP)')
+        print(f"        - Internet Control Message Protocol")
+    elif PROTOCOL == 6:
+        print(f'     -> Protocol: {PROTOCOL} (TCP)')
+        print(f"        - Transmission Control Protocol")
+    elif PROTOCOL == 17:
+        print(f'     -> Protocol: {PROTOCOL} (UDP)')
+        print(f"        - User Datagram Protocol")
+    
+    print(f'\n     -> FCS: 0x {HEADER_CHECKSUM[0]} {HEADER_CHECKSUM[1]}')
+    print(f'     -> Source Address: {SENDER_ADDR[0]}.{SENDER_ADDR[1]}.{SENDER_ADDR[2]}.{SENDER_ADDR[3]}')
+    print(f'     -> Destination Address: {DEST_ADDR[0]}.{DEST_ADDR[1]}.{DEST_ADDR[2]}.{DEST_ADDR[3]}')
 
     input('\n\t')
 
@@ -266,7 +289,7 @@ def ethernet_frame(packet, name):
             print('     - Es una MAC Address MULTICAST.')
         else:
             print('     - Es una MAC Address UNICAST.')
-    
+
     if DEST_MAC_LOCAL:
         print('     - Locally Administred.')
     else:
@@ -283,7 +306,7 @@ def ethernet_frame(packet, name):
             print('     - Es una MAC Address MULTICAST.')
         else:
             print('     - Es una MAC Address UNICAST.')
-    
+
     if SRC_MAC_LOCAL:
         print('     - Locally Administred.')
     else:
