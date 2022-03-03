@@ -201,8 +201,50 @@ def ipv4_frame(packet):
 
     print(f"\n     -> Type of Service (TOS): {packet[1]}")
 
-    if DSCP.endswith('0'):
-        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard)')
+    if DSCP == '000000':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - CS0')
+    elif DSCP == '001000':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - CS1')
+    elif DSCP == '010000':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - CS2')
+    elif DSCP == '011000':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - CS3')
+    elif DSCP == '100000':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - CS4')
+    elif DSCP == '101000':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - CS5')
+    elif DSCP == '110000':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - CS6')
+    elif DSCP == '111000':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - CS7')
+    elif DSCP == '001010':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - AF11')
+    elif DSCP == '001100':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - AF12')
+    elif DSCP == '001110':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - AF13')
+    elif DSCP == '010010':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - AF21')
+    elif DSCP == '010100':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - AF22')
+    elif DSCP == '010110':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - AF23')
+    elif DSCP == '011010':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - AF31')
+    elif DSCP == '011100':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - AF32')
+    elif DSCP == '011110':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - AF33')
+    elif DSCP == '100010':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - AF41')
+    elif DSCP == '100100':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - AF42')
+    elif DSCP == '100110':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - AF43')
+    elif DSCP == '101110':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - EF')
+    elif DSCP == '101100':
+        print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard) - VOICE-ADMIT')
 
     if ECN == '00':
         print(f'        - Explicit Congestion Notification: {binary_to_decimal(int(ECN))} (Non-ETC)')
@@ -248,7 +290,64 @@ def ipv4_frame(packet):
     print(f'     -> Source Address: {SENDER_ADDR[0]}.{SENDER_ADDR[1]}.{SENDER_ADDR[2]}.{SENDER_ADDR[3]}')
     print(f'     -> Destination Address: {DEST_ADDR[0]}.{DEST_ADDR[1]}.{DEST_ADDR[2]}.{DEST_ADDR[3]}')
 
-    input('\n\t')
+    if PROTOCOL == 1:
+        icmpv4(packet[20:])
+    else:
+        input('\n\t')
+
+def icmpv4(packet):
+    
+    TYPE = packet[0]
+    CODE = packet[1]
+    CHECK_SUM = decimal_to_hexa(packet[2:4])
+    IDENTIFIER = binary_to_decimal(int(f'{byte_binary(packet[4])}{byte_binary(packet[5])}'))
+    SEQUENCE_NUM = binary_to_decimal(int(f'{byte_binary(packet[6])}{byte_binary(packet[7])}'))
+
+    GET_GATEWAY = packet[4:8]
+    GATEWAY = ''
+    GET_ORIGINAL_DATA = packet[8:20]
+
+    ICMP_HEADER = "\033[1m" + "[ICMP]" + "\033[0m"
+
+    print(f'\n\t\t     {ICMP_HEADER}\n')
+
+    if TYPE == 3:
+        print(f'     -> Type: Destination Unreachable (3)')
+    elif TYPE == 5:
+        print(f'     -> Type: Redirect (5)')
+    elif TYPE == 8:
+        print(f'     -> Type: Echo (8)')
+    elif TYPE == 0:
+        print(f'     -> Type: Echo Reply (0)')
+    elif TYPE == 11:
+        print(f'     -> Type: Time Exceeded (11)')
+
+    if CODE == 0:
+        print(f'     -> Code: Network Unreachable (0)')
+    elif CODE == 1:
+        print(f'     -> Code: Host Unreachable (1)')
+    elif CODE == 2:
+        print(f'     -> Code: Protocol Unreachable (2)')
+    elif CODE == 3:
+        print(f'     -> Code: Port Unreachable (3)')
+
+    print(f'     -> FCS: 0x {CHECK_SUM[0]} {CHECK_SUM[1]}')
+    print(f'     -> Identifier: {IDENTIFIER}')
+    print(f'     -> Sequence: {SEQUENCE_NUM}')
+
+    if TYPE in [0, 8, 3, 11]:
+        ipv4_frame(packet[8:])
+    elif TYPE in [5]:
+
+        for number in GET_GATEWAY:
+            GATEWAY = f'{GATEWAY}{number}.'
+
+        GATEWAY = GATEWAY[:-1]
+
+        print(f'     -> Gateway Internet Address: {GATEWAY}')
+        input('\n\t')
+    else:
+        input('\n\t')
 
 def ipv6_frame(packet):
 
