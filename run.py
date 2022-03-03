@@ -8,7 +8,7 @@ def main():
     while True:
         try:
             os.system(CLEAR)
-            os.system(f'cd && cd {PATH}/{TESTING} && ls -t > ../files.txt')
+            os.system(f'cd && cd {PATH}/{TESTING} && ls | sort > ../files.txt')
 
             with open('files.txt') as f:
                 data = f.readlines()
@@ -21,7 +21,7 @@ def main():
             print('\n\t@Press CTRL + C to leave!')
 
             file = int(input('\n\tSelect: '))
-
+            
             if file >= len(data) or file < 0:
                 print(f'\n\t@ERROR: File with index "{file}" does not exists!')
                 input('\t\n')

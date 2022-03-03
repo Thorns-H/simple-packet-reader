@@ -201,11 +201,17 @@ def ipv4_frame(packet):
 
     print(f"\n     -> Type of Service (TOS): {packet[1]}")
 
-    if DSCP == '000000':
+    if DSCP.endswith('0'):
         print(f'        - Differentiated Services Code Point: {binary_to_decimal(int(DSCP))} (Standard)')
 
     if ECN == '00':
         print(f'        - Explicit Congestion Notification: {binary_to_decimal(int(ECN))} (Non-ETC)')
+    elif ECN == '01':
+        print(f'        - Explicit Congestion Notification: {binary_to_decimal(int(ECN))} (ECN Capable Transport - 1)')
+    elif ECN == '10':
+        print(f'        - Explicit Congestion Notification: {binary_to_decimal(int(ECN))} (ECN Capable Transport - 2)')
+    elif ECN == '11':
+        print(f'        - Explicit Congestion Notification: {binary_to_decimal(int(ECN))} (CE - Congestion Experienced)')
 
     print(f'     -> Total Length: {TOTAL_LENGTH} bytes')
     print(f'     -> Identification: {IDENTIFICATION}')
@@ -226,7 +232,7 @@ def ipv4_frame(packet):
 
     print(f'     -> Fragment Offset: {OFFSET}')
 
-    print(f'\n     -> Time to Live (TTL): {TTL} seconds')
+    print(f'\n     -> Time to Live (TTL): {TTL} hops')
 
     if PROTOCOL == 1:
         print(f'     -> Protocol: {PROTOCOL} (ICMP)')
