@@ -1,5 +1,5 @@
 from src.helpers import decimal_to_hexa, binary_to_decimal, byte_binary
-from src.helpers import get_oui_nic
+from src.helpers import get_oui_nic, CLEAR
 import os
 
 BROADCAST = 'FF:FF:FF:FF:FF:FF'
