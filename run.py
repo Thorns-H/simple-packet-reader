@@ -1,4 +1,5 @@
-from helpers import read_file, ethernet_frame, CLEAR
+from src.protocols import ethernet_frame
+from src.helpers import read_file, CLEAR
 import os
 
 TESTING = "test_files"
@@ -8,9 +9,9 @@ def main():
     while True:
         try:
             os.system(CLEAR)
-            os.system(f'cd && cd {PATH}/{TESTING} && ls | sort > ../files.txt')
+            os.system(f'cd && cd {PATH}/{TESTING} && ls | sort > ../src/files.txt')
 
-            with open('files.txt') as f:
+            with open('src/files.txt') as f:
                 data = f.readlines()
 
             print('\n\t\t--- Files to Read ---\n')

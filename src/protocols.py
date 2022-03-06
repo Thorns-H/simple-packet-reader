@@ -1,67 +1,10 @@
+from src.helpers import decimal_to_hexa, binary_to_decimal, byte_binary
+from src.helpers import get_oui_nic
 import os
-import platform
-
-if platform.system() != 'Linux':
-    CLEAR = 'cls'
-else:
-    CLEAR = 'clear'
 
 BROADCAST = 'FF:FF:FF:FF:FF:FF'
 global BYTES
 BYTES = 0
-
-def read_file(file_bin : str):
-
-    global BYTES
-
-    bytes = []
-
-    with open(file_bin, 'rb') as file:
-        while True:
-            binary = file.read(1)
-            if not binary:
-                break
-            bytes.append(int.from_bytes(binary, byteorder = 'big'))
-
-        BYTES = len(bytes) - 18
-
-        return bytes
-
-def decimal_to_hexa(numbers : list):
-
-    hexa_format = []
-
-    for number in numbers:
-        convertion = hex(number).upper()
-
-        convertion = convertion[2:]
-
-        if len(convertion) < 2:
-            convertion = f'0{convertion}'
-
-        hexa_format.append(convertion)
-
-    return hexa_format
-
-def get_oui_nic(MAC : str):
-    MAC = MAC.split(':')
-
-    MULTICAST = False
-    LOCAL = False
-
-    for i in range(len(MAC)):
-        MAC[i] = MAC[i].lower()
-
-    int_value = int(MAC[0], base = 16)
-
-    bin_value = bin(int_value)[2:].zfill(8)
-
-    if bin_value[7] == '1':
-        MULTICAST = True
-    if bin_value[6] == '1':
-        LOCAL = True
-
-    return MULTICAST, LOCAL
 
 def arp_frame(packet : list):
 
@@ -142,24 +85,6 @@ def arp_frame(packet : list):
     print(f'     - Target IP Address: {TARGET_PROTOCOL_ADDR}')
 
     input('\t\n')
-
-def binary_to_decimal(binary : str):
-
-    binary1 = binary
-    decimal, i, n = 0, 0, 0
-    while(binary != 0):
-        dec = binary % 10
-        decimal = decimal + dec * pow(2, i)
-        binary = binary // 10
-        i += 1
-
-    return decimal
-
-def byte_binary(int_value : int):
-
-    bin_value = bin(int_value)[2:].zfill(8)
-
-    return bin_value
 
 def ipv4_frame(packet : list):
 
@@ -377,15 +302,15 @@ def ipv6_frame(packet : list):
 
     GET_SRC_ADDR = decimal_to_hexa(packet[8:24])
 
-    for byte in GET_SRC_ADDR:
-        SRC_ADDR = f'{SRC_ADDR}{byte}:'
+    for byte in range(0, len(GET_SRC_ADDR), 2):
+        SRC_ADDR = f'{SRC_ADDR}{GET_SRC_ADDR[byte]}{GET_SRC_ADDR[byte + 1]}:'
 
     SRC_ADDR = SRC_ADDR[:-1]
 
     GET_DEST_ADDR = decimal_to_hexa(packet[24:40])
 
-    for byte in GET_DEST_ADDR:
-        DEST_ADDR = f'{DEST_ADDR}{byte}:'
+    for byte in range(0, len(GET_DEST_ADDR), 2):
+        DEST_ADDR = f'{DEST_ADDR}{GET_DEST_ADDR[byte]}{GET_DEST_ADDR[byte + 1]}:'
 
     DEST_ADDR = DEST_ADDR[:-1]
 
@@ -426,34 +351,8 @@ def ipv6_frame(packet : list):
 
     print(f'  -> Hop Limit: {HOP_LIMIT} seconds')
 
-    print(f'\n  -> Source MAC Address: {SRC_ADDR}')
-
-    SRC_ADDR_MULTI, SRC_ADDR_LOCAL = get_oui_nic(SRC_ADDR)
-
-    if SRC_ADDR_MULTI:
-        print('     - Es una MAC Address MULTICAST.')
-    else:
-        print('     - Es una MAC Address UNICAST.')
-
-    if SRC_ADDR_LOCAL:
-        print('     - Locally Administred.')
-    else:
-        print('     - Globally Unique.')
-
-    print(f'\n  -> Destination MAC Address: {DEST_ADDR}')
-
-    DEST_ADDR_MULTI, DEST_ADDR_LOCAL = get_oui_nic(DEST_ADDR)
-
-    if DEST_ADDR_MULTI:
-        print('     - Es una MAC Address MULTICAST.')
-    else:
-        print('     - Es una MAC Address UNICAST.')
-
-    if DEST_ADDR_LOCAL:
-        print('     - Locally Administred.')
-    else:
-        print('     - Globally Unique.')
-
+    print(f'\n  -> Source Address: {SRC_ADDR}')
+    print(f'  -> Destination Address: {DEST_ADDR}')
 
     input('\n\t')
 
