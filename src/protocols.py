@@ -1,5 +1,6 @@
 from src.helpers import decimal_to_hexa, binary_to_decimal, byte_binary
 from src.helpers import get_oui_nic, CLEAR
+from src.helpers import reformat_ipv6
 import os
 
 BROADCAST = 'FF:FF:FF:FF:FF:FF'
@@ -351,8 +352,8 @@ def ipv6_frame(packet : list):
 
     print(f'  -> Hop Limit: {HOP_LIMIT} seconds')
 
-    print(f'\n  -> Source Address: {SRC_ADDR}')
-    print(f'  -> Destination Address: {DEST_ADDR}')
+    print(f'\n  -> Source Address: {reformat_ipv6(SRC_ADDR)}')
+    print(f'  -> Destination Address: {reformat_ipv6(DEST_ADDR)}')
 
     input('\n\t')
 

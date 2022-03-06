@@ -79,3 +79,37 @@ def byte_binary(int_value : int):
     bin_value = bin(int_value)[2:].zfill(8)
 
     return bin_value
+
+def reformat_ipv6(ipv6 : str):
+    ipv6 = ipv6.split(':')
+
+    new_format_address = []
+
+    for frame in ipv6:
+        if frame.startswith('0'):
+            if frame == '0000':
+                frame = int(frame)
+                frame = str(frame)
+                
+                new_format_address.append(frame)
+            else:
+                for i in range(len(frame)):
+                    if frame[i] != '0':
+                        new_format_address.append(frame[i:])
+                        break
+        else:
+            new_format_address.append(frame)
+            
+    address = ''
+
+    new_format_address = list(dict.fromkeys(new_format_address))  
+
+    for data in new_format_address:
+        address = f'{address}{data}:'
+
+    address = address[:-1]
+
+    if address.find(':0:'):
+        address = address.replace(':0:','::')
+
+    return address
