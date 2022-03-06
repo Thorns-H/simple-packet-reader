@@ -10,13 +10,13 @@ BROADCAST = 'FF:FF:FF:FF:FF:FF'
 global BYTES
 BYTES = 0
 
-def read_file(packet):
+def read_file(file_bin : str):
 
     global BYTES
 
     bytes = []
 
-    with open(packet, 'rb') as file:
+    with open(file_bin, 'rb') as file:
         while True:
             binary = file.read(1)
             if not binary:
@@ -43,7 +43,7 @@ def decimal_to_hexa(numbers : list):
 
     return hexa_format
 
-def get_oui_nic(MAC):
+def get_oui_nic(MAC : str):
     MAC = MAC.split(':')
 
     MULTICAST = False
@@ -143,7 +143,7 @@ def arp_frame(packet : list):
 
     input('\t\n')
 
-def binary_to_decimal(binary):
+def binary_to_decimal(binary : str):
 
     binary1 = binary
     decimal, i, n = 0, 0, 0
@@ -155,13 +155,13 @@ def binary_to_decimal(binary):
 
     return decimal
 
-def byte_binary(int_value):
+def byte_binary(int_value : int):
 
     bin_value = bin(int_value)[2:].zfill(8)
 
     return bin_value
 
-def ipv4_frame(packet):
+def ipv4_frame(packet : list):
 
     GET_VERSION_IHL = byte_binary(packet[0])
     VERSION = GET_VERSION_IHL[:4]
@@ -295,7 +295,7 @@ def ipv4_frame(packet):
     else:
         input('\n\t')
 
-def icmpv4(packet):
+def icmpv4(packet : list):
     
     TYPE = packet[0]
     CODE = packet[1]
@@ -349,7 +349,7 @@ def icmpv4(packet):
     else:
         input('\n\t')
 
-def ipv6_frame(packet):
+def ipv6_frame(packet : list):
 
     IPV6_HEADER = "\033[1m" + "[IPV6]" + "\033[0m"
     FIRST_LAYER = packet[:4]
@@ -457,7 +457,7 @@ def ipv6_frame(packet):
 
     input('\n\t')
 
-def ethernet_frame(packet, name):
+def ethernet_frame(packet : list, name : str):
 
     name = name.split(".")
     name = name[0].title()
