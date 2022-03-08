@@ -350,10 +350,10 @@ def ipv6_frame(packet : list):
         print(f'\n  -> Next header: {NEXT_HEADER} (TCP)')
         print(f"        - Transmission Control Protocol")
 
-    print(f'  -> Hop Limit: {HOP_LIMIT} seconds')
+    print(f'  -> Hop Limit: {HOP_LIMIT} hops')
 
-    print(f'\n  -> Source Address: {reformat_ipv6(SRC_ADDR)}')
-    print(f'  -> Destination Address: {reformat_ipv6(DEST_ADDR)}')
+    print(f'\n  -> Source Address: {reformat_ipv6(SRC_ADDR).lower()}')
+    print(f'  -> Destination Address: {reformat_ipv6(DEST_ADDR).lower()}')
 
     input('\n\t')
 

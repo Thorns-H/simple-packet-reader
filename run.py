@@ -21,13 +21,26 @@ def main():
 
             print('\n\t@Press CTRL + C to leave!')
 
-            file = int(input('\n\tSelect: '))
-            
-            if file >= len(data) or file < 0:
-                print(f'\n\t@ERROR: File with index "{file}" does not exists!')
+            file = input('\n\tSelect: ')
+
+            try:
+                file = int(file)
+            except ValueError:
+                file = str(file)
+
+            if type(file) == str:
+                if file != '':
+                    print(f'\n\t@ERROR: {file} is not a valid index!')
+                else:
+                    print(f'\n\t@ERROR: You need to type something!')
+                    
                 input('\t\n')
             else:
-                ethernet_frame(read_file(f'{TESTING}/{data[file][:-1]}'), f'{data[file][:-1]}')  
+                if file >= len(data) or file < 0:
+                    print(f'\n\t@ERROR: File with index "{file}" does not exists!')
+                    input('\t\n')
+                else:
+                    ethernet_frame(read_file(f'{TESTING}/{data[file][:-1]}'), f'{data[file][:-1]}')  
         except KeyboardInterrupt:
             break
         
