@@ -101,15 +101,60 @@ def reformat_ipv6(ipv6 : str):
             new_format_address.append(frame)
             
     address = ''
+    indices = []
 
-    new_format_address = list(dict.fromkeys(new_format_address))  
+    for value in range(len(new_format_address)):
+        if new_format_address[value] == '0':
+            indices.append(value)
 
-    for data in new_format_address:
-        address = f'{address}{data}:'
+    if new_format_address == ['0','0','0','0','0','0','0','0']:
+        return '::'
 
-    address = address[:-1]
+    found_more_zeros = False
 
-    if address.find(':0:'):
-        address = address.replace(':0:','::')
+    for i in range(len(indices) - 1):
+        if indices[i] + 1 != indices[i + 1]:
+            left_zeros = new_format_address[:indices[i] + 1]
+            right_zeros = new_format_address[indices[i] + 1:]
+            found_more_zeros = True
+        else:
+            found_more_zeros = False
+
+    if found_more_zeros:
+        left_zeros = list(dict.fromkeys(left_zeros))
+
+        left_address = ''
+        right_address = ''
+
+        for data in left_zeros:
+            left_address = f'{left_address}{data}:'
+
+        if left_address.find(':0:'):
+            left_address = left_address.replace(':0:','::')
+        elif left_address.find(':0'):
+            left_address = left_address.replace(':0',':')
+        elif left_address.find('0:'):
+            left_address = left_address.replace('0:',':')
+
+        for data in right_zeros:
+            right_address = f'{right_address}{data}:'
+
+        right_address = right_address[:-1]
+
+        address = f'{left_address}{right_address}'
+    else:
+        new_format_address = list(dict.fromkeys(new_format_address))
+
+        for data in new_format_address:
+            address = f'{address}{data}:'
+
+        address = address[:-1]
+
+        if address.find(':0:'):
+            address = address.replace(':0:','::')
+        elif address.find(':0'):
+            address = address.replace(':0',':')
+        elif address.find('0:'):
+            address = address.replace('0:',':')
 
     return address
