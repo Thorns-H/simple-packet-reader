@@ -117,6 +117,7 @@ def reformat_ipv6(ipv6 : str):
             left_zeros = new_format_address[:indices[i] + 1]
             right_zeros = new_format_address[indices[i] + 1:]
             found_more_zeros = True
+            break
         else:
             found_more_zeros = False
 
@@ -129,12 +130,14 @@ def reformat_ipv6(ipv6 : str):
         for data in left_zeros:
             left_address = f'{left_address}{data}:'
 
-        if left_address.find(':0:'):
-            left_address = left_address.replace(':0:','::')
-        elif left_address.find(':0'):
-            left_address = left_address.replace(':0',':')
-        elif left_address.find('0:'):
-            left_address = left_address.replace('0:',':')
+        if f'{left_address[0]}{left_address[1]}' == '0:':
+            left_address = left_address[2:]
+            left_address = f'::{left_address}'
+        if f'{left_address[-2]}{left_address[-1]}' == ':0':
+            left_address = left_address[:-2]
+            left_address = f'{left_address}::'
+        elif left_address.find(':0:'):
+            left_address = left_address.replace(':0:', '::')
 
         for data in right_zeros:
             right_address = f'{right_address}{data}:'
@@ -150,11 +153,13 @@ def reformat_ipv6(ipv6 : str):
 
         address = address[:-1]
 
-        if address.find(':0:'):
-            address = address.replace(':0:','::')
-        elif address.find(':0'):
-            address = address.replace(':0',':')
-        elif address.find('0:'):
-            address = address.replace('0:',':')
+        if f'{address[0]}{address[1]}' == '0:':
+            address = address[2:]
+            address = f'::{address}'
+        elif f'{address[-2]}{address[-1]}' == ':0':
+            address = address[:-2]
+            address = f'{address}::'
+        elif address.find(':0:'):
+            address = address.replace(':0:', '::')
 
     return address
