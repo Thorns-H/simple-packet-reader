@@ -87,7 +87,7 @@ def arp_frame(packet : list):
 
     input('\t\n')
 
-def ipv4_frame(packet : list):
+def ipv4_frame(packet : list, icmp : bool):
 
     GET_VERSION_IHL = byte_binary(packet[0])
     VERSION = GET_VERSION_IHL[:4]
@@ -216,7 +216,7 @@ def ipv4_frame(packet : list):
     print(f'     -> Source Address: {SENDER_ADDR[0]}.{SENDER_ADDR[1]}.{SENDER_ADDR[2]}.{SENDER_ADDR[3]}')
     print(f'     -> Destination Address: {DEST_ADDR[0]}.{DEST_ADDR[1]}.{DEST_ADDR[2]}.{DEST_ADDR[3]}')
 
-    if PROTOCOL == 1:
+    if PROTOCOL == 1 and icmp:
         icmpv4(packet[20:])
     else:
         input('\n\t')
@@ -261,8 +261,8 @@ def icmpv4(packet : list):
     print(f'     -> Identifier: {IDENTIFIER}')
     print(f'     -> Sequence: {SEQUENCE_NUM}')
 
-    if TYPE in [0, 8, 3, 11]:
-        ipv4_frame(packet[8:])
+    if TYPE in [5, 3, 11]:
+        ipv4_frame(packet[8:], False)
     elif TYPE in [5]:
 
         for number in GET_GATEWAY:
@@ -338,17 +338,36 @@ def ipv6_frame(packet : list):
         print('     - Control traffic.')
 
     print(f'  -> Flow Label: {binary_to_decimal(int(FLOW_LABEL))}')
-    print(f'  -> Payload Length: {binary_to_decimal(int(PAYLOAD))} bytes de carga útil')
+    print(f'  -> Payload Length: {binary_to_decimal(int(PAYLOAD))} bytes')
 
     if NEXT_HEADER == 58:
         print(f'\n  -> Next header: {NEXT_HEADER} (ICMPv6)')
         print(f"        - Internet Control Message Protocol Version 6")
+    elif NEXT_HEADER == 0:
+        print(f'\n  -> Next header: {NEXT_HEADER} (Hop-by-hop)')
+        print(f"        - Hop by hop Options Header")
     elif NEXT_HEADER == 17:
         print(f'\n  -> Next header: {NEXT_HEADER} (UDP)')
         print(f"        - User Datagram Protocol")
     elif NEXT_HEADER == 6:
         print(f'\n  -> Next header: {NEXT_HEADER} (TCP)')
         print(f"        - Transmission Control Protocol")
+    elif NEXT_HEADER == 41:
+        print(f'\n  -> Next header: {NEXT_HEADER} (Encapsulated)')
+        print(f"        - Encapsulated iPv6 Header")
+    elif NEXT_HEADER == 43:
+        print(f'\n  -> Next header: {NEXT_HEADER} (Routing Header)')
+    elif NEXT_HEADER == 44:
+        print(f'\n  -> Next header: {NEXT_HEADER} (Fragment Header)')
+    elif NEXT_HEADER == 50:
+        print(f'\n  -> Next header: {NEXT_HEADER} (Encapsulating)')
+        print(f"        - Encapsulating Security Payload Header")
+    elif NEXT_HEADER == 51:
+        print(f'\n  -> Next header: {NEXT_HEADER} (Authentication Header)')
+    elif NEXT_HEADER == 59:
+        print(f'\n  -> Next header: {NEXT_HEADER} (No Next Header)')
+    elif NEXT_HEADER == 60:
+        print(f'\n  -> Next header: {NEXT_HEADER} (Destination Options Header)')
 
     print(f'  -> Hop Limit: {HOP_LIMIT} hops')
 
@@ -439,7 +458,7 @@ def ethernet_frame(packet : list, name : str):
     if TYPE == '0x0806 (ARP)':
         arp_frame(packet[14:-4])
     elif TYPE == '0x0800 (Ipv4)':
-        ipv4_frame(packet[14:-4])
+        ipv4_frame(packet[14:-4], True)
     elif TYPE == '0x86DD (Ipv6)':
         ipv6_frame(packet[14:-4])
     else:
