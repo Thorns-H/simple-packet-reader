@@ -1,4 +1,5 @@
 import platform
+import ipaddress
 
 if platform.system() != 'Linux':
     CLEAR = 'cls'
@@ -122,29 +123,21 @@ def reformat_ipv6(ipv6 : str):
             found_more_zeros = False
 
     if found_more_zeros:
-        left_zeros = list(dict.fromkeys(left_zeros))
 
         left_address = ''
         right_address = ''
 
         for data in left_zeros:
             left_address = f'{left_address}{data}:'
-
-        if f'{left_address[0]}{left_address[1]}' == '0:':
-            left_address = left_address[2:]
-            left_address = f'::{left_address}'
-        if f'{left_address[-2]}{left_address[-1]}' == ':0':
-            left_address = left_address[:-2]
-            left_address = f'{left_address}::'
-        elif left_address.find(':0:'):
-            left_address = left_address.replace(':0:', '::')
-
+        
         for data in right_zeros:
             right_address = f'{right_address}{data}:'
 
         right_address = right_address[:-1]
 
         address = f'{left_address}{right_address}'
+
+        address = str(ipaddress.ip_address(address))
     else:
         new_format_address = list(dict.fromkeys(new_format_address))
 
@@ -163,3 +156,17 @@ def reformat_ipv6(ipv6 : str):
             address = address.replace(':0:', '::')
 
     return address
+
+def ipv6_info(ip : str):
+    if ip == "::1":
+        print('     - Es una dirección LOOP-BACK.')
+    elif ip.startswith("fe80"):
+        print('     - Es una dirección de ENLACE LOCAL.')
+    elif ip.startswith("ff02::1:"):
+        print('     - Es una dirección MULTICAST.')
+        print('     - All Devices.')
+    elif ip.startswith("ff02::2:"):
+        print('     - Es una dirección MULTICAST.')
+        print('     - Only Routers.')
+    elif ip.startswith("2001:"):
+        print('     - Es una dirección GLOBAL UNICAST.')

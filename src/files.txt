@@ -16,15 +16,3 @@ ethernet_ipv4_tcp.bin
 ethernet_ipv4_tcp_irc.bin
 ethernet_ipv4_tcp_syn.bin
 ethernet_ipv4_udp_dns.bin
-ethernet_ipv6_nd.bin
-ipv6_icmpv6_destination_unreachable.bin
-ipv6_icmpv6_hop_limit.bin
-ipv6_icmpv6_igmp.bin
-ipv6_icmpv6_ping.bin
-ipv6_icmpv6_pong.bin
-ipv6_nd_adv_1.bin
-ipv6_nd_adv_2.bin
-ipv6_nd_router_adv.bin
-ipv6_nd_router_sol.bin
-ipv6_nd_sol_1.bin
-ipv6_nd_sol_2.bin

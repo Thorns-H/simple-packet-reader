@@ -3,7 +3,6 @@ from src.helpers import get_oui_nic, CLEAR
 from src.helpers import reformat_ipv6
 import os
 
-BROADCAST = 'FF:FF:FF:FF:FF:FF'
 global BYTES
 BYTES = 0
 
@@ -283,8 +282,6 @@ def ipv6_frame(packet : list):
     PAYLOAD = ''
     SRC_ADDR = ''
     DEST_ADDR = ''
-    SRC_DEST_ADDR = ''
-    NEW_DEST_ADDR = ''
 
     for byte in FIRST_LAYER:
         LAYER = f'{LAYER}{byte_binary(byte)}'
@@ -371,9 +368,13 @@ def ipv6_frame(packet : list):
 
     print(f'  -> Hop Limit: {HOP_LIMIT} hops')
 
-    print(f'\n  -> Source Address: {reformat_ipv6(SRC_ADDR).lower()}')
-    print(f'  -> Destination Address: {reformat_ipv6(DEST_ADDR).lower()}')
+    SRC_IP = reformat_ipv6(SRC_ADDR).lower()
+    DEST_IP = reformat_ipv6(DEST_ADDR).lower()
 
+    print(f'\n  -> Source Address: {SRC_IP}')
+    
+    print(f'\n  -> Destination Address: {DEST_IP}')
+    
     input('\n\t')
 
 def ethernet_frame(packet : list, name : str):
@@ -413,7 +414,7 @@ def ethernet_frame(packet : list, name : str):
 
     DEST_MAC_MULTI, DEST_MAC_LOCAL = get_oui_nic(DEST_MAC)
 
-    if DEST_MAC == BROADCAST:
+    if DEST_MAC == 'FF:FF:FF:FF:FF:FF':
         print('     - Es una MAC Address BROADCAST.')
     else:
         if DEST_MAC_MULTI:
@@ -430,7 +431,7 @@ def ethernet_frame(packet : list, name : str):
 
     SRC_MAC_MULTI, SRC_MAC_LOCAL = get_oui_nic(SRC_MAC)
 
-    if SRC_MAC == BROADCAST:
+    if SRC_MAC == 'FF:FF:FF:FF:FF:FF':
         print('     - Es una MAC Address BROADCAST.')
     else:
         if SRC_MAC_MULTI:
