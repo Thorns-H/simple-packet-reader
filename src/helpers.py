@@ -3,8 +3,17 @@ import ipaddress
 
 if platform.system() != 'Linux':
     CLEAR = 'cls'
+    OUTPUT = 'dir >'
 else:
+    OUTPUT = '>'
     CLEAR = 'clear'
+
+WARNING = '\033[93m'
+ITALIC = '\x1B[3m'
+GREEN = '\033[92m'
+RED = '\033[91m'
+END = '\033[0m'
+UNDERLINE = '\033[4m'
 
 def read_file(file_bin : str):
 

@@ -1,16 +1,11 @@
 from src.protocols import ethernet_frame
 from src.helpers import read_file, CLEAR
+from src.helpers import WARNING, ITALIC, GREEN, RED, END, UNDERLINE
 import os
 
 global TESTING
 TESTING = "test_files"
 PATH = os.getcwd()
-WARNING = '\033[93m'
-ITALIC = '\x1B[3m'
-GREEN = '\033[92m'
-RED = '\033[91m'
-END = '\033[0m'
-UNDERLINE = '\033[4m'
 
 def main():
     global TESTING
@@ -39,16 +34,16 @@ def main():
             if type(file) == str:
                 if file.lower() in ["tested", "old"]:
                     if TESTING == "tested":
-                        print(f"\n\t{WARNING}@WARNING:{END} Already working with new files!")
+                        print(f"\n\t{WARNING}@WARNING:{END} Already working with old files!")
                     else:
                         TESTING = "tested"
                         print(f'\n\t{GREEN}@SUCCESS:{END} Switched to old files!')
                 elif file.lower() in ["new", "working"]:
                     if TESTING == "test_files":
-                        print(f"\n\t{WARNING}@WARNING:{END} Already working with old files!")
+                        print(f"\n\t{WARNING}@WARNING:{END} Already working with new files!")
                     else:
                         TESTING = "test_files"
-                        print(f'\n\t{GREEN}@SUCCESS:{END} Switched to new files!')
+                        print(f'\n\t{GREEN}@SUCCESS:{END} Switched to old files!')
                 elif file != '':
                     print(f'\n\t{RED}@ERROR:{END} {UNDERLINE}{file}{END} is not a valid index!')
                 else:

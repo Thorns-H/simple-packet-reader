@@ -1,6 +1,7 @@
 from src.helpers import decimal_to_hexa, binary_to_decimal, byte_binary
 from src.helpers import get_oui_nic, CLEAR
 from src.helpers import reformat_ipv6
+from src.helpers import WARNING, ITALIC, GREEN, RED, END, UNDERLINE
 import os
 
 global BYTES
@@ -56,7 +57,7 @@ def arp_frame(packet : list):
 
     TARGET_PROTOCOL_ADDR = TARGET_PROTOCOL_ADDR[:-1]
 
-    ARP_HEADER = "\033[1m" + "[ARP]" + "\033[0m"
+    ARP_HEADER = f"{GREEN} [ARP] {END}"
 
     print(f'\n\t\t     {ARP_HEADER}\n')
 
@@ -115,7 +116,7 @@ def ipv4_frame(packet : list, icmp : bool):
     SENDER_ADDR = packet[12:16]
     DEST_ADDR = packet[16:20]
 
-    IPV4_HEADER = "\033[1m" + "[IPV4]" + "\033[0m"
+    IPV4_HEADER = f"{GREEN} [IPV4] {END}"
 
     print(f'\n\t\t     {IPV4_HEADER}\n')
 
@@ -232,7 +233,7 @@ def icmpv4(packet : list):
     GATEWAY = ''
     GET_ORIGINAL_DATA = packet[8:20]
 
-    ICMP_HEADER = "\033[1m" + "[ICMP]" + "\033[0m"
+    ICMP_HEADER = f"{GREEN} [ICMPv4] {END}"
 
     print(f'\n\t\t     {ICMP_HEADER}\n')
 
@@ -276,7 +277,7 @@ def icmpv4(packet : list):
 
 def ipv6_frame(packet : list):
 
-    IPV6_HEADER = "\033[1m" + "[IPV6]" + "\033[0m"
+    IPV6_HEADER = f"{GREEN} [IPV6] {END}"
     FIRST_LAYER = packet[:4]
     LAYER = ''
     PAYLOAD = ''
@@ -384,7 +385,7 @@ def ethernet_frame(packet : list, name : str):
 
     os.system(CLEAR)
 
-    print(f'\n\t----- Output for {name} -----')
+    print(f'\n\t{ITALIC}     OUTPUT FOR {name}     {END}')
 
     GET_DEST_MAC = decimal_to_hexa(packet[:6])
     GET_SRC_MAC = decimal_to_hexa(packet[6:12])
@@ -406,7 +407,7 @@ def ethernet_frame(packet : list, name : str):
 
     SRC_MAC = SRC_MAC[:-1]
 
-    ETHER_HEADER = "\033[1m" + "[ETHERNET]" + "\033[0m"
+    ETHER_HEADER = f"{GREEN} [ETHERNET] {END}"
 
     print(f'\n\t\t   {ETHER_HEADER}\n')
 
