@@ -124,8 +124,6 @@ def reformat_ipv6(ipv6 : str):
 
     for i in range(len(indices) - 1):
         if indices[i] + 1 != indices[i + 1]:
-            left_zeros = new_format_address[:indices[i] + 1]
-            right_zeros = new_format_address[indices[i] + 1:]
             found_more_zeros = True
             break
         else:
@@ -133,18 +131,10 @@ def reformat_ipv6(ipv6 : str):
 
     if found_more_zeros:
 
-        left_address = ''
-        right_address = ''
+        for data in new_format_address:
+            address = f'{address}{data}:'
 
-        for data in left_zeros:
-            left_address = f'{left_address}{data}:'
-        
-        for data in right_zeros:
-            right_address = f'{right_address}{data}:'
-
-        right_address = right_address[:-1]
-
-        address = f'{left_address}{right_address}'
+        address = address[:-1]
 
         address = str(ipaddress.ip_address(address))
     else:
@@ -165,17 +155,3 @@ def reformat_ipv6(ipv6 : str):
             address = address.replace(':0:', '::')
 
     return address
-
-def ipv6_info(ip : str):
-    if ip == "::1":
-        print('     - Es una dirección LOOP-BACK.')
-    elif ip.startswith("fe80"):
-        print('     - Es una dirección de ENLACE LOCAL.')
-    elif ip.startswith("ff02::1:"):
-        print('     - Es una dirección MULTICAST.')
-        print('     - All Devices.')
-    elif ip.startswith("ff02::2:"):
-        print('     - Es una dirección MULTICAST.')
-        print('     - Only Routers.')
-    elif ip.startswith("2001:"):
-        print('     - Es una dirección GLOBAL UNICAST.')

@@ -2,6 +2,7 @@ from src.helpers import decimal_to_hexa, binary_to_decimal, byte_binary
 from src.helpers import get_oui_nic, CLEAR
 from src.helpers import reformat_ipv6
 from src.helpers import WARNING, ITALIC, GREEN, RED, END, UNDERLINE
+import ipaddress
 import os
 
 global BYTES
@@ -373,12 +374,166 @@ def ipv6_frame(packet : list):
     DEST_IP = reformat_ipv6(DEST_ADDR).lower()
 
     print(f'\n  -> Source Address: {SRC_IP}')
+    """
+    if ipaddress.ip_address(SRC_IP).is_global:
+        print(f"        - Es una Dirección GLOBAL.")
+    elif ipaddress.ip_address(SRC_IP).is_link_local:
+        print(f"        - Es una Dirección LINK LOCAL.")
+
+    if ipaddress.ip_address(SRC_IP).is_loopback:
+        print(f"        - Es una Dirección LOOPBACK.")
+    elif ipaddress.ip_address(SRC_IP).is_multicast:
+        print(f"        - Es una Dirección MULTICAST.")
+    """
     
-    print(f'\n  -> Destination Address: {DEST_IP}')
-    
+    print(f'  -> Destination Address: {DEST_IP}')
+    """
+    if ipaddress.ip_address(DEST_IP).is_global:
+        print(f"        - Es una Dirección GLOBAL.")
+    elif ipaddress.ip_address(DEST_IP).is_link_local:
+        print(f"        - Es una Dirección LINK LOCAL.")
+
+    if ipaddress.ip_address(DEST_IP).is_loopback:
+        print(f"        - Es una Dirección LOOPBACK.")
+    elif ipaddress.ip_address(DEST_IP).is_multicast:
+        print(f"        - Es una Dirección MULTICAST.")
+    """
+
+    if NEXT_HEADER == 58:
+        icmpv6(packet[40:])
+    else:
+        input('\n\t')
+
+def icmpv6(packet : list):
+    TYPE = packet[0]
+    CODE = packet[1]
+    CHECKSUM = packet[2:4]
+    CHECKSUM = decimal_to_hexa(packet[2:4])
+    FLAGS = byte_binary(packet[4])[:4]
+    RESERVED = packet[4:8]
+    GET_TARGET_ADDRESS = decimal_to_hexa(packet[8:24])
+    POSSIBLE_MAC = decimal_to_hexa(packet[24:30])
+
+    ICMP_MAC = ''
+
+    for data in POSSIBLE_MAC:
+        ICMP_MAC = f'{ICMP_MAC}{data}:'
+
+    ICMP_MAC = ICMP_MAC[:-1]
+
+    TARGET_ADDRESS = ''
+
+    for byte in range(0, len(GET_TARGET_ADDRESS), 2):
+        TARGET_ADDRESS = f'{TARGET_ADDRESS}{GET_TARGET_ADDRESS[byte]}{GET_TARGET_ADDRESS[byte + 1]}:'
+
+    TARGET_ADDRESS = TARGET_ADDRESS[:-1]
+
+    ICMPv6_HEADER = f"{GREEN} [ICMPv6] {END}"
+
+    print(f'\n\t\t    {ICMPv6_HEADER}\n')
+
+    if TYPE == 135:
+        print(f'     -> Type: {TYPE} (Neighbor Solicitation)')
+        print(f'     -> Code: {CODE} (Not used)')
+    elif TYPE == 136:
+        print(f'     -> Type: {TYPE} (Neighbor Advertisement)')
+        print(f'     -> Code: {CODE} (Not used)')
+    elif TYPE == 1:
+        print(f'     -> Type: {TYPE} (Source Link-Layer Address)')
+        print(f'     -> Lenght: {CODE} bytes')
+    elif TYPE == 2:
+        print(f'     -> Type: {TYPE} (Target Link-Layer Address)')
+        print(f'     -> Lenght: {CODE} bytes')
+    elif TYPE == 3:
+        print(f'     -> Type: {TYPE} (Time Exceeded)')
+        print(f'     -> Code: {CODE} (Not used)')
+    elif TYPE == 128:
+        print(f'     -> Type: {TYPE} (Echo Request)')
+    elif TYPE == 129:
+        print(f'     -> Type: {TYPE} (Echo Reply)')
+    elif TYPE == 133:
+        print(f'     -> Type: {TYPE} (Router Solicitation)')
+        print(f'     -> Code: {CODE} (Not used)')
+    elif TYPE == 134:
+        print(f'     -> Type: {TYPE} (Router Advertisement)')
+        print(f'     -> Code: {CODE} (Not used)')
+    else:
+        print(f'     -> Type: {TYPE}')
+
+    print(f'     -> FCS: 0x {CHECKSUM[0]} {CHECKSUM[1]}')
+
+    if TYPE == 1:
+        if ICMP_MAC == SRC_MAC:
+            print(f'     -> Source Link-Layer Address: {SRC_MAC}')
+    elif TYPE == 2:
+        if ICMP_MAC == DEST_MAC:
+            print(f'     -> Target Link-Layer Address: {DEST_MAC}')
+    elif TYPE == 133:
+        if ICMP_MAC == SRC_MAC:
+            print(f'     -> Source MAC Address: {DEST_MAC}')
+    elif TYPE == 134:
+        print(f'\n     -> Cur Hop Limit: {packet[4]}')
+
+        AUTOFLAGS = byte_binary(packet[5])[:3]
+
+        print(f'     -> Auto Config Flags: {AUTOFLAGS}')
+
+        if AUTOFLAGS[0] == '1':
+            print(f"        - Bit 1 (M): {AUTOFLAGS[0]} (DHCPv6 Available)")
+        else:
+            print(f"        - Bit 1 (M): {AUTOFLAGS[0]} (Not DHCPv6 Available)")
+        if AUTOFLAGS[1] == '1':
+            print(f"        - Bit 2 (O): {AUTOFLAGS[1]} (All Settings Available)")
+        else:
+            print(f"        - Bit 2 (O): {AUTOFLAGS[1]} (Only Default Settings Available)")
+        
+        print(f"        - Bit 3 (Reserved): {AUTOFLAGS[2]}")
+
+        ROUTER_LIFETIME = f'{byte_binary(packet[6])}{byte_binary(packet[7])}'
+        ROUTER_LIFETIME = binary_to_decimal(int(ROUTER_LIFETIME))
+
+        print(f'\n     -> Router Lifetime: {ROUTER_LIFETIME} seconds')
+
+        REACHABLE_TIME = f'{byte_binary(packet[8])}{byte_binary(packet[9])}{byte_binary(packet[10])}{byte_binary(packet[11])}'
+        REACHABLE_TIME = binary_to_decimal(int(REACHABLE_TIME))
+
+        print(f'     -> Reachable Time: {REACHABLE_TIME} mili-seconds')
+
+        RETRANS_TIME = f'{byte_binary(packet[12])}{byte_binary(packet[13])}{byte_binary(packet[14])}{byte_binary(packet[15])}'
+        RETRANS_TIME = binary_to_decimal(int(RETRANS_TIME))
+
+        print(f'     -> Retrans Time: {RETRANS_TIME} mili-seconds')
+
+        if ICMP_MAC == SRC_MAC:
+            print(f'\n     -> Source MAC Address: {SRC_MAC}')
+
+    elif TYPE == 135:
+        print(f'\n     -> Target Address: {reformat_ipv6(TARGET_ADDRESS).lower()}')
+    elif TYPE == 136:
+        print(f'\n     -> Flags: {FLAGS}')
+        if FLAGS[0] == '1':
+            print(f"        - Bit 1 (R): {FLAGS[0]} (Sended by Router)")
+        else:
+            print(f"        - Bit 1 (R): {FLAGS[0]} (Sended by Host)")
+        if FLAGS[1] == '1':
+            print(f"        - Bit 2 (S): {FLAGS[1]} (Neighbor Solicitation Response)")
+        else:
+            print(f"        - Bit 2 (S): {FLAGS[1]}")
+        if FLAGS[2] == '1':
+            print(f"        - Bit 3 (O): {FLAGS[2]} (Rewrite Source Device Cache)")
+        else:
+            print(f"        - Bit 3 (O): {FLAGS[2]}")
+
+        print(f"        - Bit 4 (Reserved): {FLAGS[3]}")
+
+        print(f'\n     -> Target Address: {reformat_ipv6(TARGET_ADDRESS).lower()}')
+
     input('\n\t')
 
 def ethernet_frame(packet : list, name : str):
+
+    global DEST_MAC
+    global SRC_MAC
 
     name = name.split(".")
     name = name[0].title()
@@ -392,10 +547,11 @@ def ethernet_frame(packet : list, name : str):
     GET_TYPE = decimal_to_hexa(packet[12:14])
     GET_FCS = decimal_to_hexa(packet[-4:])
 
-    DEST_MAC = ''
-    SRC_MAC = ''
     TYPE = f'0x{GET_TYPE[0]}{GET_TYPE[1]}'
     FCS = f'0x {GET_FCS[0]} {GET_FCS[1]} {GET_FCS[2]} {GET_FCS[3]}'
+
+    DEST_MAC = ''
+    SRC_MAC = ''
 
     for byte in GET_DEST_MAC:
         DEST_MAC = f'{DEST_MAC}{byte}:'

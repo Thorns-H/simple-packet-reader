@@ -1,3 +1,4 @@
+from time import sleep
 from src.protocols import ethernet_frame
 from src.helpers import read_file, CLEAR
 from src.helpers import WARNING, ITALIC, GREEN, RED, END, UNDERLINE
@@ -22,9 +23,10 @@ def main():
             for i in range(len(data)):
                 print(f'\t{ITALIC}[{i}] - {data[i][:-1]}{END}')
 
-            print(f'\n\t\t{WARNING}@Press CTRL + C to leave!{END}')
+            print(f'\n\t\t{WARNING}Press CTRL + C to leave!{END}')
 
-            file = input('\n\tSelect: ')
+            file = input(f'\n\tSelect: {ITALIC}')
+            print(f'{END}', end = "")
 
             try:
                 file = int(file)
@@ -38,12 +40,14 @@ def main():
                     else:
                         TESTING = "tested"
                         print(f'\n\t{GREEN}@SUCCESS:{END} Switched to old files!')
-                elif file.lower() in ["new", "working"]:
+                elif file.lower() in ["new"]:
                     if TESTING == "test_files":
                         print(f"\n\t{WARNING}@WARNING:{END} Already working with new files!")
                     else:
                         TESTING = "test_files"
                         print(f'\n\t{GREEN}@SUCCESS:{END} Switched to old files!')
+                elif file.lower() == "working":
+                    print(f'\n\t{WARNING}@ADVERTISEMENT:{END} Currently working with {TESTING}!')
                 elif file != '':
                     print(f'\n\t{RED}@ERROR:{END} {UNDERLINE}{file}{END} is not a valid index!')
                 else:
@@ -57,6 +61,8 @@ def main():
                 else:
                     ethernet_frame(read_file(f'{TESTING}/{data[file][:-1]}'), f'{data[file][:-1]}')  
         except KeyboardInterrupt:
+            print(f'\n\n\t{GREEN}@SUCCESS:{END} Closing the program!')
+            sleep(1)
             break
         
     os.system(CLEAR)
