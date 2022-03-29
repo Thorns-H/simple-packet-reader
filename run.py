@@ -1,6 +1,6 @@
 from time import sleep
-from src.protocols import ethernet_frame
-from src.helpers import read_file, CLEAR
+from src.protocols import ethernet_frame, pcap_package
+from src.helpers import read_file, CLEAR, REDIRECT
 from src.helpers import WARNING, ITALIC, GREEN, RED, END, UNDERLINE
 import os
 
@@ -8,12 +8,16 @@ global TESTING
 TESTING = "test_files"
 PATH = os.getcwd()
 
+# sudo -E python3 run.py
+
 def main():
     global TESTING
+    filter = False
+    to_find = ''
     while True:
         try:
             os.system(CLEAR)
-            os.system(f'cd && cd {PATH}/{TESTING} && ls | sort > ../src/files.txt')
+            os.system(f'cd && cd {PATH}/{TESTING} && {REDIRECT} | sort > ../src/files.txt')
 
             with open('src/files.txt') as f:
                 data = f.readlines()
@@ -21,7 +25,14 @@ def main():
             print(f'\n\t\t--- {ITALIC}Testing Directory{END} ---\n')
 
             for i in range(len(data)):
-                print(f'\t{ITALIC}[{i}] - {data[i][:-1]}{END}')
+                if not filter:
+                    print(f'\t{ITALIC}[{i}] - {data[i][:-1]}{END}')
+                else:
+                    if to_find in data[i][:-1]:
+                        print(f'\t{ITALIC}[{i}] - {data[i][:-1]}{END}')
+
+            if filter:
+                print(f'\n\t{WARNING}@WARNING:{END} Currently working by filter: "{to_find}"!')
 
             print(f'\n\t\t{WARNING}Press CTRL + C to leave!{END}')
 
@@ -34,7 +45,15 @@ def main():
                 file = str(file)
 
             if type(file) == str:
-                if file.lower() in ["tested", "old"]:
+                if file.lower().startswith("filter:") and len(file) > 7:
+                    to_find = file[7:].lower()
+                    if to_find != "all":
+                        print(f'\n\t{GREEN}@SUCCESS:{END} Enabled filter by "{to_find}"!')
+                        filter = True
+                    else:
+                        print(f'\n\t{GREEN}@SUCCESS:{END} Restarting files!')
+                        filter = False
+                elif file.lower() in ["tested", "old"]:
                     if TESTING == "tested":
                         print(f"\n\t{WARNING}@WARNING:{END} Already working with old files!")
                     else:
@@ -48,6 +67,8 @@ def main():
                         print(f'\n\t{GREEN}@SUCCESS:{END} Switched to old files!')
                 elif file.lower() == "working":
                     print(f'\n\t{WARNING}@ADVERTISEMENT:{END} Currently working with {TESTING}!')
+                elif file.lower() == "mode:pcap":
+                    pcap_package()
                 elif file != '':
                     print(f'\n\t{RED}@ERROR:{END} {UNDERLINE}{file}{END} is not a valid index!')
                 else:

@@ -2,6 +2,11 @@ from src.helpers import decimal_to_hexa, binary_to_decimal, byte_binary
 from src.helpers import get_oui_nic, CLEAR
 from src.helpers import reformat_ipv6
 from src.helpers import WARNING, ITALIC, GREEN, RED, END, UNDERLINE
+
+from pylibpcap import get_first_iface
+from pylibpcap.base import Sniff as capture
+
+import socket
 import ipaddress
 import os
 
@@ -374,33 +379,14 @@ def ipv6_frame(packet : list):
     DEST_IP = reformat_ipv6(DEST_ADDR).lower()
 
     print(f'\n  -> Source Address: {SRC_IP}')
-    """
-    if ipaddress.ip_address(SRC_IP).is_global:
-        print(f"        - Es una Dirección GLOBAL.")
-    elif ipaddress.ip_address(SRC_IP).is_link_local:
-        print(f"        - Es una Dirección LINK LOCAL.")
-
-    if ipaddress.ip_address(SRC_IP).is_loopback:
-        print(f"        - Es una Dirección LOOPBACK.")
-    elif ipaddress.ip_address(SRC_IP).is_multicast:
-        print(f"        - Es una Dirección MULTICAST.")
-    """
     
     print(f'  -> Destination Address: {DEST_IP}')
-    """
-    if ipaddress.ip_address(DEST_IP).is_global:
-        print(f"        - Es una Dirección GLOBAL.")
-    elif ipaddress.ip_address(DEST_IP).is_link_local:
-        print(f"        - Es una Dirección LINK LOCAL.")
-
-    if ipaddress.ip_address(DEST_IP).is_loopback:
-        print(f"        - Es una Dirección LOOPBACK.")
-    elif ipaddress.ip_address(DEST_IP).is_multicast:
-        print(f"        - Es una Dirección MULTICAST.")
-    """
 
     if NEXT_HEADER == 58:
         icmpv6(packet[40:])
+    elif NEXT_HEADER == 0:
+        print(packet[40 + (packet[41] + 1 * 8):])
+        input()
     else:
         input('\n\t')
 
@@ -411,67 +397,63 @@ def icmpv6(packet : list):
     CHECKSUM = decimal_to_hexa(packet[2:4])
     FLAGS = byte_binary(packet[4])[:4]
     RESERVED = packet[4:8]
-    GET_TARGET_ADDRESS = decimal_to_hexa(packet[8:24])
-    POSSIBLE_MAC = decimal_to_hexa(packet[24:30])
 
-    ICMP_MAC = ''
+    LAST_INDEX = 7
 
-    for data in POSSIBLE_MAC:
-        ICMP_MAC = f'{ICMP_MAC}{data}:'
+    try:
+        GET_TARGET_ADDRESS = decimal_to_hexa(packet[8:24]) 
+        TARGET_ADDRESS = ''
 
-    ICMP_MAC = ICMP_MAC[:-1]
+        for byte in range(0, len(GET_TARGET_ADDRESS), 2):
+            TARGET_ADDRESS = f'{TARGET_ADDRESS}{GET_TARGET_ADDRESS[byte]}{GET_TARGET_ADDRESS[byte + 1]}:'
 
-    TARGET_ADDRESS = ''
+        TARGET_ADDRESS = TARGET_ADDRESS[:-1]
+        try:
+            GET_DEST_ADDRESS = decimal_to_hexa(packet[24:40])
+            DEST_ADDRESS = ''
 
-    for byte in range(0, len(GET_TARGET_ADDRESS), 2):
-        TARGET_ADDRESS = f'{TARGET_ADDRESS}{GET_TARGET_ADDRESS[byte]}{GET_TARGET_ADDRESS[byte + 1]}:'
+            for byte in range(0, len(GET_DEST_ADDRESS), 2):
+                DEST_ADDRESS = f'{DEST_ADDRESS}{GET_DEST_ADDRESS[byte]}{GET_DEST_ADDRESS[byte + 1]}:'
 
-    TARGET_ADDRESS = TARGET_ADDRESS[:-1]
+            DEST_ADDRESS = DEST_ADDRESS[:-1]
+        except IndexError:
+            pass
+    except IndexError:
+        pass
 
     ICMPv6_HEADER = f"{GREEN} [ICMPv6] {END}"
 
     print(f'\n\t\t    {ICMPv6_HEADER}\n')
 
-    if TYPE == 135:
-        print(f'     -> Type: {TYPE} (Neighbor Solicitation)')
-        print(f'     -> Code: {CODE} (Not used)')
-    elif TYPE == 136:
-        print(f'     -> Type: {TYPE} (Neighbor Advertisement)')
-        print(f'     -> Code: {CODE} (Not used)')
-    elif TYPE == 1:
-        print(f'     -> Type: {TYPE} (Source Link-Layer Address)')
-        print(f'     -> Lenght: {CODE} bytes')
-    elif TYPE == 2:
-        print(f'     -> Type: {TYPE} (Target Link-Layer Address)')
-        print(f'     -> Lenght: {CODE} bytes')
-    elif TYPE == 3:
-        print(f'     -> Type: {TYPE} (Time Exceeded)')
-        print(f'     -> Code: {CODE} (Not used)')
-    elif TYPE == 128:
-        print(f'     -> Type: {TYPE} (Echo Request)')
-    elif TYPE == 129:
-        print(f'     -> Type: {TYPE} (Echo Reply)')
-    elif TYPE == 133:
-        print(f'     -> Type: {TYPE} (Router Solicitation)')
-        print(f'     -> Code: {CODE} (Not used)')
-    elif TYPE == 134:
-        print(f'     -> Type: {TYPE} (Router Advertisement)')
-        print(f'     -> Code: {CODE} (Not used)')
+    if TYPE in [1, 2, 3, 128, 129, 133, 134, 135, 136, 137]:
+        if TYPE == 1:
+            print(f'     -> Type: {TYPE} (Destination Unreachable)')
+        elif TYPE == 2:
+            print(f'     -> Type: {TYPE} (Packet Too Big)')
+        elif TYPE == 3:
+            print(f'     -> Type: {TYPE} (Hop Limit)')
+        elif TYPE == 128:
+            print(f'     -> Type: {TYPE} (Echo Request)')
+        elif TYPE == 129:
+            print(f'     -> Type: {TYPE} (Echo Reply)')
+        elif TYPE == 133:
+            print(f'     -> Type: {TYPE} (Router Solicitation)')
+        elif TYPE == 134:
+            print(f'     -> Type: {TYPE} (Router Advertisement)')
+        elif TYPE == 135:
+            print(f'     -> Type: {TYPE} (Neighbor Solicitation)')
+        elif TYPE == 136:
+            print(f'     -> Type: {TYPE} (Neighbor Advertisement)')
+        elif TYPE == 137:
+            print(f'     -> Type: {TYPE} (Redirect Message)') 
     else:
         print(f'     -> Type: {TYPE}')
 
-    print(f'     -> FCS: 0x {CHECKSUM[0]} {CHECKSUM[1]}')
+    print(f'     -> Code: {CODE}')
+    print(f'     -> FCS: {CHECKSUM[0]} {CHECKSUM[1]}')
 
-    if TYPE == 1:
-        if ICMP_MAC == SRC_MAC:
-            print(f'     -> Source Link-Layer Address: {SRC_MAC}')
-    elif TYPE == 2:
-        if ICMP_MAC == DEST_MAC:
-            print(f'     -> Target Link-Layer Address: {DEST_MAC}')
-    elif TYPE == 133:
-        if ICMP_MAC == SRC_MAC:
-            print(f'     -> Source MAC Address: {DEST_MAC}')
-    elif TYPE == 134:
+    if TYPE == 134:
+
         print(f'\n     -> Cur Hop Limit: {packet[4]}')
 
         AUTOFLAGS = byte_binary(packet[5])[:3]
@@ -504,12 +486,13 @@ def icmpv6(packet : list):
 
         print(f'     -> Retrans Time: {RETRANS_TIME} mili-seconds')
 
-        if ICMP_MAC == SRC_MAC:
-            print(f'\n     -> Source MAC Address: {SRC_MAC}')
+        LAST_INDEX = 16
 
     elif TYPE == 135:
         print(f'\n     -> Target Address: {reformat_ipv6(TARGET_ADDRESS).lower()}')
+        LAST_INDEX = 24
     elif TYPE == 136:
+
         print(f'\n     -> Flags: {FLAGS}')
         if FLAGS[0] == '1':
             print(f"        - Bit 1 (R): {FLAGS[0]} (Sended by Router)")
@@ -528,7 +511,54 @@ def icmpv6(packet : list):
 
         print(f'\n     -> Target Address: {reformat_ipv6(TARGET_ADDRESS).lower()}')
 
-    input('\n\t')
+        LAST_INDEX = 24
+
+    elif TYPE == 137:
+        print(f'\n     -> Target Address: {reformat_ipv6(TARGET_ADDRESS).lower()}')
+        print(f'\n     -> Destination Address: {reformat_ipv6(DEST_ADDRESS).lower()}')
+        LAST_INDEX = 40
+    
+    print(LAST_INDEX)
+
+    if TYPE not in [128, 129]:
+        icmpv6_options(packet[LAST_INDEX:])
+        input('\n\t')
+    else:
+        input('\n\t')
+
+def icmpv6_options(packet : list):
+
+    last_index = 0
+
+    while True:
+        try:
+            TYPE = packet[last_index]
+            LEN = packet[last_index + 1]
+
+            ICMPv6_OPTIONS_HEADER = f"{GREEN} [ICMPv6 Options] {END}"
+
+            print(f'\n\t\t{ICMPv6_OPTIONS_HEADER}\n')
+
+            if TYPE == 1:
+                print(f'     -> Type of Option: {TYPE} (Source Link-Layer Address)')
+            elif TYPE == 2:
+                print(f'     -> Type of Option: {TYPE} (Target Link-Layer Address)')	
+            elif TYPE == 3:
+                print(f'     -> Type of Option: {TYPE} (Prefix Info)')
+            elif TYPE == 4:
+                print(f'     -> Type of Option: {TYPE} (Redirect Header)')
+            elif TYPE == 14:
+                print(f'     -> Type of Option: {TYPE} (Nonce Option)')
+            elif TYPE == 25:
+                print(f'     -> Type of Option: {TYPE} (Recursive DNS Server)')
+            else:
+                print(f'     -> Type of Option: {TYPE}')
+
+            print(f'     -> Length: {LEN} bytes')
+            print(len(packet))
+            packet = packet[last_index + last_index + 2:]
+        except IndexError:
+            break
 
 def ethernet_frame(packet : list, name : str):
 
@@ -621,3 +651,46 @@ def ethernet_frame(packet : list, name : str):
         ipv6_frame(packet[14:-4])
     else:
         input('\t\n')
+
+def pcap_package():
+    success = False
+
+    while True:
+        device = get_first_iface()
+        os.system(CLEAR)
+
+        try:
+            print(f'\n\t\t--- {ITALIC}Live Capture using Libpcap{END} ---\n')
+
+            if not success:
+                print(f"\t\t{ITALIC}     There's no last package!{END}")
+                print(f'\n\t\t{WARNING}      Press CTRL + C to return!{END}')
+                opc = str(input(f'\n\t\tSniff the next package? ({device}): {ITALIC}'))
+            else:
+                print(f'\t\t->{ITALIC} Device used on last capture: {device}{END}')
+
+                print(f'\n\t\t->{ITALIC} Last package length: {length} bytes{END}')
+                print(f'\t\t->{ITALIC} Last capture time: {time}{END}')
+                print(f'\t\t->{ITALIC} Last state:{GREEN} Good ✔{END}')
+
+                print(f'\n\t\t{WARNING}      Press CTRL + C to return!{END}')
+                opc = str(input(f'\n\t\tSniff the next package? ({device}): {ITALIC}'))
+
+            if opc == '' or 's' or 'y':
+
+                live_capture = capture(device, count = 1, promisc = 1)
+
+                for plen, t, buf in live_capture.capture():
+                    time = t
+                    length = plen
+                    packet = buf
+                    success = True
+                    break
+
+                if success:
+                    ethernet_frame(list(packet), 'Live Capture')
+                else:
+                    print(f'\n\t{RED}@ERROR:{END} Capture Failed!')
+        except KeyboardInterrupt:
+            print(f'\n\n\t\t{GREEN}  @SUCCESS:{END} Returning to main menu!')
+            break

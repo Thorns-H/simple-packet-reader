@@ -3,10 +3,10 @@ import ipaddress
 
 if platform.system() != 'Linux':
     CLEAR = 'cls'
-    OUTPUT = 'dir >'
+    REDIRECT = 'dir /b'
 else:
-    OUTPUT = '>'
     CLEAR = 'clear'
+    REDIRECT = 'ls'
 
 WARNING = '\033[93m'
 ITALIC = '\x1B[3m'
@@ -154,4 +154,4 @@ def reformat_ipv6(ipv6 : str):
         elif address.find(':0:'):
             address = address.replace(':0:', '::')
 
-    return address
+    return address  
