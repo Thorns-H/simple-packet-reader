@@ -6,14 +6,13 @@ from src.helpers import WARNING, ITALIC, GREEN, RED, END, UNDERLINE
 from pylibpcap import get_first_iface
 from pylibpcap.base import Sniff as capture
 
-import socket
 import ipaddress
 import os
 
 global BYTES
 BYTES = 0
 
-def arp_frame(packet : list):
+def arp_frame(packet : list) -> None:
 
     HTYPE = decimal_to_hexa(packet[:2])
     HTYPE = f'{HTYPE[0]}{HTYPE[1]}'
@@ -93,7 +92,7 @@ def arp_frame(packet : list):
 
     input('\t\n')
 
-def ipv4_frame(packet : list, icmp : bool):
+def ipv4_frame(packet : list, icmp : bool) -> None:
 
     GET_VERSION_IHL = byte_binary(packet[0])
     VERSION = GET_VERSION_IHL[:4]
@@ -224,10 +223,12 @@ def ipv4_frame(packet : list, icmp : bool):
 
     if PROTOCOL == 1 and icmp:
         icmpv4(packet[20:])
+    elif PROTOCOL == 17:
+        udp(packet[20:])
     else:
         input('\n\t')
 
-def icmpv4(packet : list):
+def icmpv4(packet : list) -> None:
     
     TYPE = packet[0]
     CODE = packet[1]
@@ -281,7 +282,7 @@ def icmpv4(packet : list):
     else:
         input('\n\t')
 
-def ipv6_frame(packet : list):
+def ipv6_frame(packet : list) -> None:
 
     IPV6_HEADER = f"{GREEN} [IPV6] {END}"
     FIRST_LAYER = packet[:4]
@@ -385,12 +386,12 @@ def ipv6_frame(packet : list):
     if NEXT_HEADER == 58:
         icmpv6(packet[40:])
     elif NEXT_HEADER == 0:
-        print(packet[40 + (packet[41] + 1 * 8):])
+        #print(packet[40 + (packet[41] + 1 * 8):])
         input()
     else:
         input('\n\t')
 
-def icmpv6(packet : list):
+def icmpv6(packet : list) -> None:
     TYPE = packet[0]
     CODE = packet[1]
     CHECKSUM = packet[2:4]
@@ -450,7 +451,7 @@ def icmpv6(packet : list):
         print(f'     -> Type: {TYPE}')
 
     print(f'     -> Code: {CODE}')
-    print(f'     -> FCS: {CHECKSUM[0]} {CHECKSUM[1]}')
+    print(f'     -> FCS: 0x {CHECKSUM[0]} {CHECKSUM[1]}')
 
     if TYPE == 134:
 
@@ -517,8 +518,6 @@ def icmpv6(packet : list):
         print(f'\n     -> Target Address: {reformat_ipv6(TARGET_ADDRESS).lower()}')
         print(f'\n     -> Destination Address: {reformat_ipv6(DEST_ADDRESS).lower()}')
         LAST_INDEX = 40
-    
-    print(LAST_INDEX)
 
     if TYPE not in [128, 129]:
         icmpv6_options(packet[LAST_INDEX:])
@@ -526,7 +525,7 @@ def icmpv6(packet : list):
     else:
         input('\n\t')
 
-def icmpv6_options(packet : list):
+def icmpv6_options(packet : list) -> None:
 
     last_index = 0
 
@@ -554,13 +553,32 @@ def icmpv6_options(packet : list):
             else:
                 print(f'     -> Type of Option: {TYPE}')
 
-            print(f'     -> Length: {LEN} bytes')
-            print(len(packet))
-            packet = packet[last_index + last_index + 2:]
+            #print(f'     -> Length: {LEN} bytes')
+            #print(len(packet))
+            #packet = packet[last_index + last_index + 2:]
+            break
         except IndexError:
             break
 
-def ethernet_frame(packet : list, name : str):
+def udp(packet : list) -> None:
+
+    SRC_PORT = f'{binary_to_decimal(int(f"{byte_binary(packet[0])}{byte_binary(packet[1])}"))}'
+    DEST_PORT = f'{binary_to_decimal(int(f"{byte_binary(packet[2])}{byte_binary(packet[3])}"))}'
+    LENGTH = f'{binary_to_decimal(int(f"{byte_binary(packet[4])}{byte_binary(packet[5])}"))}'
+    CHECKSUM = decimal_to_hexa(packet[6:8])
+
+    UDP_HEADER = f"{GREEN} [UDP] {END}"
+
+    print(f'\n\t\t    {UDP_HEADER}\n')
+
+    print(f'     -> Source Port: {SRC_PORT}')
+    print(f'     -> Destination Port: {DEST_PORT}')
+    print(f'     -> Length: {LENGTH} bytes')
+    print(f'     -> FCS: 0x {CHECKSUM[0]} {CHECKSUM[1]}')
+
+    input('\n\t')
+
+def ethernet_frame(packet : list, name : str) -> None:
 
     global DEST_MAC
     global SRC_MAC
@@ -652,8 +670,9 @@ def ethernet_frame(packet : list, name : str):
     else:
         input('\t\n')
 
-def pcap_package():
+def pcap_package() -> None:
     success = False
+    count = 0
 
     while True:
         device = get_first_iface()
@@ -665,16 +684,26 @@ def pcap_package():
             if not success:
                 print(f"\t\t{ITALIC}     There's no last package!{END}")
                 print(f'\n\t\t{WARNING}      Press CTRL + C to return!{END}')
-                opc = str(input(f'\n\t\tSniff the next package? ({device}): {ITALIC}'))
+                opc = str(input(f'\n\t\tSniff the next packet? ({device}): {ITALIC}'))
             else:
                 print(f'\t\t->{ITALIC} Device used on last capture: {device}{END}')
 
-                print(f'\n\t\t->{ITALIC} Last package length: {length} bytes{END}')
+                print(f'\n\t\t->{ITALIC} Last packet length: {length} bytes{END}')
                 print(f'\t\t->{ITALIC} Last capture time: {time}{END}')
                 print(f'\t\t->{ITALIC} Last state:{GREEN} Good ✔{END}')
 
+                print(f'\n\t\t->{ITALIC} Packet count: {count}{END}')
+                if stats.ps_ifdrop > 0: 
+                    print(f'\t\t->{ITALIC} Packets droped by device: {stats.ps_ifdrop}{RED} ✖{END}')
+                else:
+                    print(f'\t\t->{ITALIC} Packets droped by device: {stats.ps_ifdrop}{GREEN} ✔{END}')
+                if stats.ps_drop > 0:
+                    print(f'\t\t->{ITALIC} Packets droped by kernel: {stats.ps_drop}{RED} ✖{END}')
+                else:
+                    print(f'\t\t->{ITALIC} Packets droped by kernel: {stats.ps_drop}{GREEN} ✔{END}')
+
                 print(f'\n\t\t{WARNING}      Press CTRL + C to return!{END}')
-                opc = str(input(f'\n\t\tSniff the next package? ({device}): {ITALIC}'))
+                opc = str(input(f'\n\t\tSniff the next packet? ({device}): {ITALIC}'))
 
             if opc == '' or 's' or 'y':
 
@@ -689,8 +718,11 @@ def pcap_package():
 
                 if success:
                     ethernet_frame(list(packet), 'Live Capture')
+                    stats = live_capture.stats()
+                    count += 1
                 else:
                     print(f'\n\t{RED}@ERROR:{END} Capture Failed!')
+                    
         except KeyboardInterrupt:
             print(f'\n\n\t\t{GREEN}  @SUCCESS:{END} Returning to main menu!')
             break
