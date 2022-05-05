@@ -155,3 +155,32 @@ def reformat_ipv6(ipv6 : str):
             address = address.replace(':0:', '::')
 
     return address  
+
+def get_domain(packet : list):
+
+    name = packet
+    decimal_name = []
+    domain = ''
+
+    for letter in name:
+        if letter != 0:
+            decimal_name.append(letter)
+        else:
+            break
+    
+    index = 0
+    point_values = []
+    
+    while index != len(decimal_name):
+
+        value = decimal_name[index]
+        index = index + value + 1
+        point_values.append(index)
+    
+    for i in range(0, len(decimal_name)):
+        if i not in point_values:
+            domain = f'{domain}{chr(decimal_name[i])}'
+        else:
+            domain = f'{domain}.'
+
+    return domain

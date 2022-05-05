@@ -65,9 +65,15 @@ def main():
                     else:
                         TESTING = "test_files"
                         print(f'\n\t{GREEN}@SUCCESS:{END} Switched to old files!')
+                elif file.lower() in ["own", "mine"]:
+                    if TESTING == "own_files":
+                        print(f"\n\t{WARNING}@WARNING:{END} Already working with your own files!")
+                    else:
+                        TESTING = "own_files"
+                        print(f'\n\t{GREEN}@SUCCESS:{END} Switched to your files!')
                 elif file.lower() == "working":
                     print(f'\n\t{WARNING}@ADVERTISEMENT:{END} Currently working with {TESTING}!')
-                elif file.lower() == "mode:pcap":
+                elif file.lower() == "pcap":
                     pcap_package()
                 elif file != '':
                     print(f'\n\t{RED}@ERROR:{END} {UNDERLINE}{file}{END} is not a valid index!')

@@ -1,5 +1,6 @@
 from src.helpers import decimal_to_hexa, binary_to_decimal, byte_binary
 from src.helpers import get_oui_nic, CLEAR
+from src.helpers import get_domain
 from src.helpers import reformat_ipv6
 from src.helpers import WARNING, ITALIC, GREEN, RED, END, UNDERLINE
 
@@ -8,9 +9,12 @@ from pylibpcap.base import Sniff as capture
 
 import ipaddress
 import os
+import string
 
 global BYTES
 BYTES = 0
+global success
+success = False
 
 def arp_frame(packet : list) -> None:
 
@@ -520,7 +524,7 @@ def icmpv6(packet : list) -> None:
         LAST_INDEX = 40
 
     if TYPE not in [128, 129]:
-        icmpv6_options(packet[LAST_INDEX:])
+        #icmpv6_options(packet[LAST_INDEX:])
         input('\n\t')
     else:
         input('\n\t')
@@ -575,6 +579,152 @@ def udp(packet : list) -> None:
     print(f'     -> Destination Port: {DEST_PORT}')
     print(f'     -> Length: {LENGTH} bytes')
     print(f'     -> FCS: 0x {CHECKSUM[0]} {CHECKSUM[1]}')
+
+    dns(packet[8:])
+
+def dns(packet : list):
+
+    global success
+
+    ID = decimal_to_hexa(packet[:2])
+    FLAGS = decimal_to_hexa(packet[2:4])
+
+    FLAGS = f'{FLAGS[0]}{FLAGS[1]}'
+
+    QUESTIONS = int(f'{binary_to_decimal(int(f"{byte_binary(packet[4])}{byte_binary(packet[5])}"))}')
+    ANSWERS = int(f'{binary_to_decimal(int(f"{byte_binary(packet[6])}{byte_binary(packet[7])}"))}')
+    AUTHORITY_RRS = int(f'{binary_to_decimal(int(f"{byte_binary(packet[8])}{byte_binary(packet[9])}"))}')
+    ADDITIONAL_RRS = int(f'{binary_to_decimal(int(f"{byte_binary(packet[10])}{byte_binary(packet[11])}"))}')
+
+    LAST_INDEX = 12
+    FLAGS_STATUS = False
+
+    if FLAGS in ['0100', '8180']:
+        FLAGS_STATUS = True
+
+    if FLAGS_STATUS:
+
+        DNS_HEADER = f"{GREEN} [DNS] {END}"
+
+        print(f'\n\t\t    {DNS_HEADER}\n')
+
+        print(f'     -> Transaction ID: 0x{ID[0]}{ID[1]}')
+
+        if FLAGS == '0100':
+            print(f'     -> Flags: 0x{FLAGS} (Standard Query)')
+        elif FLAGS == '8180':
+            print(f'     -> Flags: 0x{FLAGS} (Standard Query Response)')
+
+        print(f'     -> Questions: {QUESTIONS}')
+        print(f'     -> Answers RRs: {ANSWERS}')
+        print(f'     -> Authority RRs: {AUTHORITY_RRS}')
+        print(f'     -> Additional RRs: {ADDITIONAL_RRS}')
+
+        if QUESTIONS > 0:
+
+            for i in range(QUESTIONS):
+                domain = get_domain(packet[LAST_INDEX:])
+                LAST_INDEX = LAST_INDEX + len(domain)
+
+                TYPE = '001C'
+
+                TYPE = decimal_to_hexa(packet[LAST_INDEX + 1:LAST_INDEX + 3])
+                TYPE = f'{TYPE[0]}{TYPE[1]}'
+                CLASS = decimal_to_hexa(packet[LAST_INDEX + 3:LAST_INDEX + 5])
+                CLASS = f'{CLASS[0]}{CLASS[1]}'
+
+                print(f'\n     -> Question #{i+1}:')
+                print(f'        - Name: {domain} ({len(domain) - domain.count(".") - 1})')
+
+                if TYPE == '0001':
+                    print(f'        - Type: A - {int(TYPE)} (Host Address)')
+                elif TYPE == '0002':
+                    print(f'        - Type: NS - {int(TYPE)} (Authoritative Name Server)')
+                elif TYPE == '0003':
+                    print(f'        - Type: MD - {int(TYPE)} (Mail Destination)')
+                elif TYPE == '0004':
+                    print(f'        - Type: MF - {int(TYPE)} (Mail Forwarder)')
+                elif TYPE == '0005':
+                    print(f'        - Type: CNAME - {int(TYPE)} (Canonical Name for an Alias)')
+                else:
+                    print(f'        - Type: 0x{TYPE}')
+
+                if CLASS == '0000':
+                    print(f'        - Class: 0x{CLASS} - Reserved')
+                elif CLASS == '0001':
+                    print(f'        - Class: 0x{CLASS} - Internet (IN)')
+                elif CLASS == '0002':
+                    print(f'        - Class: 0x{CLASS} - Unassigned')
+                elif CLASS == '0003':
+                    print(f'        - Class: 0x{CLASS} - Chaos (CH)')
+                elif CLASS == '0004':
+                    print(f'        - Class: 0x{CLASS} - Hesiod (HS)')
+                else:
+                    print(f'        - Class: 0x{CLASS}')
+
+                LAST_INDEX = LAST_INDEX + 5
+
+            for i in range(ANSWERS):
+
+                name = decimal_to_hexa(packet[LAST_INDEX:LAST_INDEX + 2])
+                TYPE = decimal_to_hexa(packet[LAST_INDEX + 2:LAST_INDEX + 4])
+                TYPE = int(f'{TYPE[0]}{TYPE[1]}')
+                CLASS = decimal_to_hexa(packet[LAST_INDEX + 4:LAST_INDEX + 6])
+                CLASS = f'{CLASS[0]}{CLASS[1]}'
+
+                TTL = int(f'{binary_to_decimal(int(f"{byte_binary(packet[LAST_INDEX + 6])}{byte_binary(packet[LAST_INDEX + 7])}{byte_binary(packet[LAST_INDEX + 8])}{byte_binary(packet[LAST_INDEX + 9])}"))}')
+
+                DATA_LENGTH = int(f'{binary_to_decimal(int(f"{byte_binary(packet[LAST_INDEX + 10])}{byte_binary(packet[LAST_INDEX + 11])}"))}')
+
+                print(f'\n     -> Answer #{i+1}:')
+                print(f'        - Name: {name[0]} {name[1]}')
+
+                if TYPE == '0001':
+                    print(f'        - Type: A {int(TYPE)} (Host Address)')
+
+                    GET_ADDRESS = packet[LAST_INDEX + 12:]
+                    ADDRESS = ''
+
+                    for number in GET_ADDRESS:
+                        ADDRESS = f'{ADDRESS}{number}.'
+
+                    ADDRESS = ADDRESS[:-1]
+                    
+                elif TYPE == '0002':
+                    print(f'        - Type: NS - {int(TYPE)} (Authoritative Name Server)')
+                elif TYPE == '0003':
+                    print(f'        - Type: MD - {int(TYPE)} (Mail Destination)')
+                elif TYPE == '0004':
+                    print(f'        - Type: MF - {int(TYPE)} (Mail Forwarder)')
+                elif TYPE == '0005':
+                    print(f'        - Type: CNAME - {int(TYPE)} (Canonical Name for an Alias)')
+
+                    CNAME = get_domain(packet[LAST_INDEX + 12:])            
+                    LAST_INDEX = LAST_INDEX + len(CNAME) + 13
+
+                else:
+                    print(f'        - Type: 0x{TYPE}')
+
+                if CLASS == '0000':
+                    print(f'        - Class: 0x{CLASS} - Reserved')
+                elif CLASS == '0001':
+                    print(f'        - Class: 0x{CLASS} - Internet (IN)')
+                elif CLASS == '0002':
+                    print(f'        - Class: 0x{CLASS} - Unassigned')
+                elif CLASS == '0003':
+                    print(f'        - Class: 0x{CLASS} - Chaos (CH)')
+                elif CLASS == '0004':
+                    print(f'        - Class: 0x{CLASS} - Hesiod (HS)')
+                else:
+                    print(f'        - Class: 0x{CLASS}')
+
+                print(f'        - Time to Live: {TTL} seconds')
+                print(f'        - Data Length: {DATA_LENGTH}')
+
+                if TYPE == '0000':
+                    print(f'        - Address: {ADDRESS}')
+                elif TYPE == '0005':
+                    print(f'        - CNAME: {CNAME}')
 
     input('\n\t')
 
@@ -662,16 +812,16 @@ def ethernet_frame(packet : list, name : str) -> None:
     print(f'     - FCS: {FCS}')
 
     if TYPE == '0x0806 (ARP)':
-        arp_frame(packet[14:-4])
+        arp_frame(packet[14:])
     elif TYPE == '0x0800 (Ipv4)':
-        ipv4_frame(packet[14:-4], True)
+        ipv4_frame(packet[14:], True)
     elif TYPE == '0x86DD (Ipv6)':
-        ipv6_frame(packet[14:-4])
+        ipv6_frame(packet[14:])
     else:
         input('\t\n')
 
 def pcap_package() -> None:
-    success = False
+    global success
     count = 0
 
     while True:
